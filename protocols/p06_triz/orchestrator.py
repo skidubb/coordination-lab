@@ -252,11 +252,16 @@ class TRIZOrchestrator:
 def _parse_json_array(text: str) -> list[dict]:
     """Extract a JSON array from LLM output that may contain markdown fences."""
     text = text.strip()
+    # Try to find JSON array between markdown fences
     if "```" in text:
-        # Extract content between first pair of triple backticks
-        start = text.index("```")
-        # Skip past the opening fence line
-        start = text.index("\n", start) + 1
-        end = text.index("```", start)
-        text = text[start:end].strip()
+        import re
+        match = re.search(r"```(?:json)?\s*\n(.*?)```", text, re.DOTALL)
+        if match:
+            text = match.group(1).strip()
+    # Fallback: find the first [ ... ] in the text
+    if not text.startswith("["):
+        start = text.find("[")
+        end = text.rfind("]")
+        if start != -1 and end != -1:
+            text = text[start:end + 1]
     return json.loads(text)
