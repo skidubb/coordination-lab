@@ -516,6 +516,22 @@ This table is the core deliverable of the entire research program. Every cell is
 
 ---
 
+### Phase 6: Simulation & Theoretical Validation (Weeks 21-24) — Optional
+
+**Goal:** Use Agent-Based Modeling to explain empirical results, validate protocol rankings against network theory, and generate predictions for untested parameter combinations.
+
+**Key work:**
+
+- Model protocols as ABM simulations with simplified agent response functions (agreement tendency, novelty generation, persuadability)
+- Map each protocol to its communication topology (chain, fully-connected, hierarchical clustering, etc.)
+- Test Centola's complex contagion hypothesis: do protocols with reinforcement dynamics (Debate, 1-2-4-All) outperform single-pass protocols (Synthesis) because of network structure?
+- Sensitivity analysis: identify which protocol parameters matter most (agent count, round count, topology) via simulation before additional LLM runs
+- Validate: compare ABM-predicted protocol rankings against Phase 2-4 empirical rankings
+
+**Phase 6 Deliverable:** Simulation framework, theoretical explanation of top protocol performance patterns, predictions for untested configurations, publishable paper connecting coordination protocols to network science.
+
+---
+
 ## Part 6: Cost and Timeline Estimates
 
 ### Estimated API Costs Per Phase
@@ -527,6 +543,7 @@ This table is the core deliverable of the entire research program. Every cell is
 | Phase 3 (extended) | ~120 | $0.10-1.00 | $0.50-5.00 | ~$150-300 |
 | Phase 4 (emergence) | ~60 | $0.10-1.00 | N/A | ~$30-60 |
 | Phase 5 (router) | ~40 validation | $0.10-1.00 | $0.50-5.00 | ~$50-100 |
+| Phase 6 (simulation) | N/A (compute-only) | N/A | N/A | ~$0 |
 | **Total** | **~430** |  |  | **~$450-875** |
 
 Note: Costs assume v2-style tool-controlled runs dominate. If T2 runs reintroduce the v1 tool-calling overhead, the ceiling could reach $1,500-2,000.
@@ -540,8 +557,9 @@ Note: Costs assume v2-style tool-controlled runs dominate. If T2 runs reintroduc
 | 3: Extended Protocols | 9-12 | 17 protocols + 48 questions + extended results |
 | 4: Emergence Testing | 13-16 | LS vs. convergent emergence comparison |
 | 5: Router Construction | 17-20 | Working adaptive router in C-Suite |
+| 6: Simulation & Validation (optional) | 21-24 | ABM framework + theoretical validation + network science paper |
 
-**Total: 20 weeks / 5 months to full research program completion.**
+**Total: 24 weeks / 6 months to full research program completion (20 weeks core + 4 weeks optional simulation phase).**
 
 ---
 
@@ -549,11 +567,12 @@ Note: Costs assume v2-style tool-controlled runs dominate. If T2 runs reintroduc
 
 ### Research Outputs
 
-This program produces at minimum 3 publishable artifacts:
+This program produces at minimum 4 publishable artifacts:
 
 1. **"Coordination Architecture Selection for Multi-Agent Strategic Advisory"** — the core empirical paper. Protocol × problem type × tool-access results across 430+ runs. Target: ODSC talk, arXiv preprint, or AI engineering blog series.
 2. **"Do Liberating Structures Produce Emergence in LLM Agent Teams?"** — the Phase 4 emergence analysis. Novel contribution: first empirical test of which human facilitation mechanisms survive translation to artificial agents. Target: academic venue or high-quality AI research blog.
 3. **"The Adaptive Router: Empirically-Grounded Protocol Selection for Multi-Agent Systems"** — the Phase 5 engineering paper. Practical contribution: a working system that matches problems to coordination architectures. Target: engineering blog, open-source release, or product documentation for C-Suite.
+4. **"Communication Topology and Complex Contagion in Multi-Agent Coordination"** — the Phase 6 simulation paper. Connects Centola's network science to LLM agent coordination: why reinforcement-based protocols (Debate, 1-2-4-All) outperform single-pass architectures, explained through ABM and communication topology analysis. Target: computational social science venue or network science journal.
 
 ### Competitive Positioning
 
