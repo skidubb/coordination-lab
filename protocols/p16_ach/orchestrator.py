@@ -218,7 +218,13 @@ class ACHOrchestrator:
                 ))
             return cells
 
-        tasks = [_score_one(a, ev) for a in self.agents for ev in evidence]
+        sem = asyncio.Semaphore(4)
+
+        async def _throttled(a, ev):
+            async with sem:
+                return await _score_one(a, ev)
+
+        tasks = [_throttled(a, ev) for a in self.agents for ev in evidence]
         results = await asyncio.gather(*tasks)
         return [c for batch in results for c in batch]
 
