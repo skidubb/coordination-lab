@@ -18,9 +18,9 @@ Debate, synthesis, negotiation. I figured that was the standard toolkit for mult
 
 More than ten years ago, I took a workshop on Liberating Structures [1]. It's a framework of microstructures for group interaction built around a single principle: minimal structural constraints produce emergent behavior that no individual could have planned.
 
-Here's the one that stuck with me: Troika Consulting. Three people. One presents a problem, then physically turns away and just listens while the other two discuss it. The presenter can't defend. Can't redirect. They absorb perspectives their ego would normally filter out.
+Here's the one that stuck with me: TRIZ. Named after the Russian theory of inventive problem-solving, the Liberating Structures version asks a deceptively simple question: "What must we stop doing to make progress?" You list everything you're doing to guarantee failure, then design the opposite. It bypasses the optimism bias that makes teams cling to broken strategies.
 
-Or 1-2-4-All. Individual reflection, then pairs, then quads, then the whole room. Each layer transforms the idea rather than just aggregating it.
+Or Wicked Questions. You surface the paradoxes that a group is quietly living with—"How is it that we need to move fast AND get buy-in from everyone?"—and instead of resolving them, you hold both truths simultaneously. The tension itself becomes the insight.
 
 The core insight from Liberating Structures is simple but profound: the structure of interaction determines the quality of the output. Recent research validates this directly—a framework called "Talk Structurally, Act Hierarchically" [13] demonstrates that hierarchical, structured agent collaboration systematically outperforms flat, unstructured interaction. The geometry of the conversation matters as much as the content.
 
