@@ -97,12 +97,14 @@ def main():
     parser.add_argument("--agent-config", help="Path to JSON file with custom agent definitions")
     parser.add_argument("--thinking-model", default="claude-opus-4-6", help="Model for agent reasoning")
     parser.add_argument("--orchestration-model", default="claude-haiku-4-5-20251001", help="Model for mechanical steps")
+    parser.add_argument("--thinking-budget", type=int, default=10000, help="Token budget for extended thinking (default: 10000)")
     args = parser.parse_args()
 
     agents = build_agents(args.agents, args.agent_config)
     orchestrator = SynthesisOrchestrator(
         agents=agents,
         thinking_model=args.thinking_model,
+        thinking_budget=args.thinking_budget,
     )
 
     print(f"Running Parallel Synthesis with {len(agents)} agents: {', '.join(a['name'] for a in agents)}")

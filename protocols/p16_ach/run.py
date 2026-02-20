@@ -141,6 +141,12 @@ def main() -> None:
         help="Override the orchestration model (default: claude-haiku-4-5-20251001).",
     )
     parser.add_argument(
+        "--thinking-budget",
+        type=int,
+        default=10000,
+        help="Token budget for extended thinking (default: 10000).",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="Output raw JSON instead of formatted text.",
@@ -153,6 +159,7 @@ def main() -> None:
         agents=agents,
         thinking_model=args.thinking_model,
         orchestration_model=args.orchestration_model,
+        thinking_budget=args.thinking_budget,
     )
 
     result = asyncio.run(orchestrator.run(args.question))

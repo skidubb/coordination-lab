@@ -56,6 +56,7 @@ class TRIZOrchestrator:
         agents: list[dict],
         thinking_model: str = "claude-opus-4-6",
         orchestration_model: str = "claude-haiku-4-5-20251001",
+        thinking_budget: int = 10_000,
     ):
         """
         Args:
@@ -63,12 +64,14 @@ class TRIZOrchestrator:
                     Any agents work — C-Suite, GTM, custom, etc.
             thinking_model: Model for agent reasoning (failure gen, synthesis).
             orchestration_model: Model for mechanical steps (dedup, invert, rank).
+            thinking_budget: Token budget for extended thinking on Opus calls.
         """
         if not agents:
             raise ValueError("At least one agent is required")
         self.agents = agents
         self.thinking_model = thinking_model
         self.orchestration_model = orchestration_model
+        self.thinking_budget = thinking_budget
         self.client = anthropic.AsyncAnthropic()
 
     async def run(self, question: str) -> TRIZResult:
@@ -119,11 +122,12 @@ class TRIZOrchestrator:
             messages = [{"role": "user", "content": prompt}]
             response = await self.client.messages.create(
                 model=self.thinking_model,
-                max_tokens=2048,
+                max_tokens=self.thinking_budget + 4096,
+                thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
                 system=agent["system_prompt"],
                 messages=messages,
             )
-            return response.content[0].text
+            return _extract_text(response)
 
         return await asyncio.gather(
             *(query_agent(agent) for agent in self.agents)
@@ -238,7 +242,8 @@ class TRIZOrchestrator:
         )
         response = await self.client.messages.create(
             model=self.thinking_model,
-            max_tokens=4096,
+            max_tokens=self.thinking_budget + 4096,
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             messages=[{
                 "role": "user",
                 "content": SYNTHESIS_PROMPT.format(
@@ -246,7 +251,16 @@ class TRIZOrchestrator:
                 ),
             }],
         )
-        return response.content[0].text
+        return _extract_text(response)
+
+
+def _extract_text(response: anthropic.types.Message) -> str:
+    """Extract text from a response that may contain thinking blocks."""
+    parts = []
+    for block in response.content:
+        if hasattr(block, "text"):
+            parts.append(block.text)
+    return "\n".join(parts)
 
 
 def _parse_json_array(text: str) -> list[dict]:

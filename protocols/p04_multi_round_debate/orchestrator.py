@@ -48,14 +48,14 @@ class DebateOrchestrator:
         agents: list[dict],
         rounds: int = 3,
         thinking_model: str = "claude-opus-4-6",
-        orchestration_model: str = "claude-haiku-4-5-20251001",
+        thinking_budget: int = 10_000,
     ):
         """
         Args:
             agents: List of {"name": str, "system_prompt": str} dicts.
             rounds: Number of debate rounds (minimum 2: opening + final).
             thinking_model: Model for all debate rounds and synthesis.
-            orchestration_model: Not used in P4, kept for API consistency.
+            thinking_budget: Token budget for extended thinking on Opus calls.
         """
         if not agents:
             raise ValueError("At least one agent is required")
@@ -64,6 +64,7 @@ class DebateOrchestrator:
         self.agents = agents
         self.num_rounds = rounds
         self.thinking_model = thinking_model
+        self.thinking_budget = thinking_budget
         self.client = anthropic.AsyncAnthropic()
 
     async def run(self, question: str) -> DebateResult:
@@ -124,13 +125,14 @@ class DebateOrchestrator:
 
             response = await self.client.messages.create(
                 model=self.thinking_model,
-                max_tokens=4096,
+                max_tokens=self.thinking_budget + 4096,
+                thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
                 system=agent["system_prompt"],
                 messages=[{"role": "user", "content": prompt}],
             )
             return DebateArgument(
                 name=agent["name"],
-                content=response.content[0].text,
+                content=_extract_text(response),
                 round_number=round_number,
             )
 
@@ -145,7 +147,8 @@ class DebateOrchestrator:
         transcript = format_prior_arguments(rounds)
         response = await self.client.messages.create(
             model=self.thinking_model,
-            max_tokens=4096,
+            max_tokens=self.thinking_budget + 4096,
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             system="You are a strategic synthesizer producing actionable conclusions from structured debates.",
             messages=[{
                 "role": "user",
@@ -154,4 +157,13 @@ class DebateOrchestrator:
                 ),
             }],
         )
-        return response.content[0].text
+        return _extract_text(response)
+
+
+def _extract_text(response: anthropic.types.Message) -> str:
+    """Extract text from a response that may contain thinking blocks."""
+    parts = []
+    for block in response.content:
+        if hasattr(block, "text"):
+            parts.append(block.text)
+    return "\n".join(parts)

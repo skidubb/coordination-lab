@@ -74,6 +74,7 @@ class DelphiOrchestrator:
         max_rounds: int = 3,
         thinking_model: str | None = None,
         orchestration_model: str | None = None,
+        thinking_budget: int = 10_000,
     ) -> None:
         self.agents = agents  # [{"name": ..., "system_prompt": ...}, ...]
         self.max_rounds = max_rounds
@@ -81,6 +82,7 @@ class DelphiOrchestrator:
             self.thinking_model = thinking_model
         if orchestration_model:
             self.orchestration_model = orchestration_model
+        self.thinking_budget = thinking_budget
         self.client = anthropic.AsyncAnthropic()
 
     # ------------------------------------------------------------------
@@ -151,7 +153,8 @@ class DelphiOrchestrator:
             )
             resp = await self.client.messages.create(
                 model=self.thinking_model,
-                max_tokens=2048,
+                max_tokens=self.thinking_budget + 4096,
+                thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
                 messages=[{"role": "user", "content": prompt}],
             )
             parsed = self._parse_json_object(self._extract_text(resp))
@@ -207,7 +210,8 @@ class DelphiOrchestrator:
             )
             resp = await self.client.messages.create(
                 model=self.thinking_model,
-                max_tokens=2048,
+                max_tokens=self.thinking_budget + 4096,
+                thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
                 messages=[{"role": "user", "content": prompt}],
             )
             parsed = self._parse_json_object(self._extract_text(resp))

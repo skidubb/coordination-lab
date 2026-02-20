@@ -46,6 +46,7 @@ class NegotiationOrchestrator:
         rounds: int = 3,
         thinking_model: str = "claude-opus-4-6",
         orchestration_model: str = "claude-haiku-4-5-20251001",
+        thinking_budget: int = 10_000,
     ):
         """
         Args:
@@ -53,6 +54,7 @@ class NegotiationOrchestrator:
             rounds: Number of negotiation rounds (minimum 2: opening + revision).
             thinking_model: Model for agent reasoning and synthesis.
             orchestration_model: Model for constraint extraction (Haiku).
+            thinking_budget: Token budget for extended thinking on Opus calls.
         """
         if not agents:
             raise ValueError("At least one agent is required")
@@ -61,6 +63,7 @@ class NegotiationOrchestrator:
         self.agents = agents
         self.num_rounds = rounds
         self.thinking_model = thinking_model
+        self.thinking_budget = thinking_budget
         self.client = anthropic.AsyncAnthropic()
         self.constraint_store = ConstraintStore()
         self.extractor = ConstraintExtractor(model=orchestration_model)
@@ -133,13 +136,14 @@ class NegotiationOrchestrator:
 
             response = await self.client.messages.create(
                 model=self.thinking_model,
-                max_tokens=4096,
+                max_tokens=self.thinking_budget + 4096,
+                thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
                 system=agent["system_prompt"],
                 messages=[{"role": "user", "content": prompt}],
             )
             return NegotiationArgument(
                 name=agent["name"],
-                content=response.content[0].text,
+                content=_extract_text(response),
                 round_number=round_number,
             )
 
@@ -155,7 +159,8 @@ class NegotiationOrchestrator:
         constraint_table = self.constraint_store.format_for_prompt()
         response = await self.client.messages.create(
             model=self.thinking_model,
-            max_tokens=4096,
+            max_tokens=self.thinking_budget + 4096,
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             system="You are a strategic synthesizer producing actionable conclusions from constraint-based negotiations.",
             messages=[{
                 "role": "user",
@@ -166,7 +171,16 @@ class NegotiationOrchestrator:
                 ),
             }],
         )
-        return response.content[0].text
+        return _extract_text(response)
+
+
+def _extract_text(response: anthropic.types.Message) -> str:
+    """Extract text from a response that may contain thinking blocks."""
+    parts = []
+    for block in response.content:
+        if hasattr(block, "text"):
+            parts.append(block.text)
+    return "\n".join(parts)
 
 
 def _format_prior_arguments(rounds: list[NegotiationRound]) -> str:

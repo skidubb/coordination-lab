@@ -34,6 +34,7 @@ class SynthesisOrchestrator:
         agents: list[dict],
         thinking_model: str = "claude-opus-4-6",
         orchestration_model: str = "claude-haiku-4-5-20251001",
+        thinking_budget: int = 10_000,
     ):
         """
         Args:
@@ -41,11 +42,13 @@ class SynthesisOrchestrator:
             thinking_model: Model for agent reasoning and synthesis.
             orchestration_model: Not used in P3 (all stages are thinking tasks),
                                  kept for API consistency across protocols.
+            thinking_budget: Token budget for extended thinking on Opus calls.
         """
         if not agents:
             raise ValueError("At least one agent is required")
         self.agents = agents
         self.thinking_model = thinking_model
+        self.thinking_budget = thinking_budget
         self.client = anthropic.AsyncAnthropic()
 
     async def run(self, question: str) -> SynthesisResult:
@@ -72,11 +75,12 @@ class SynthesisOrchestrator:
         async def query_agent(agent: dict) -> str:
             response = await self.client.messages.create(
                 model=self.thinking_model,
-                max_tokens=4096,
+                max_tokens=self.thinking_budget + 4096,
+                thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
                 system=agent["system_prompt"],
                 messages=[{"role": "user", "content": question}],
             )
-            return response.content[0].text
+            return _extract_text(response)
 
         return await asyncio.gather(
             *(query_agent(agent) for agent in self.agents)
@@ -95,8 +99,18 @@ class SynthesisOrchestrator:
         )
         response = await self.client.messages.create(
             model=self.thinking_model,
-            max_tokens=4096,
+            max_tokens=self.thinking_budget + 4096,
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             system=SYNTHESIS_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}],
         )
-        return response.content[0].text
+        return _extract_text(response)
+
+
+def _extract_text(response: anthropic.types.Message) -> str:
+    """Extract text from a response that may contain thinking blocks."""
+    parts = []
+    for block in response.content:
+        if hasattr(block, "text"):
+            parts.append(block.text)
+    return "\n".join(parts)
