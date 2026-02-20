@@ -147,7 +147,7 @@ class RedBlueWhiteOrchestrator:
             )
             resp = await self.client.messages.create(
                 model=self.thinking_model,
-                max_tokens=4096,
+                max_tokens=12288,
                 thinking={
                     "type": "enabled",
                     "budget_tokens": 8192,
@@ -183,7 +183,7 @@ class RedBlueWhiteOrchestrator:
             )
             resp = await self.client.messages.create(
                 model=self.thinking_model,
-                max_tokens=4096,
+                max_tokens=12288,
                 thinking={
                     "type": "enabled",
                     "budget_tokens": 8192,
@@ -222,7 +222,7 @@ class RedBlueWhiteOrchestrator:
         )
         resp = await self.client.messages.create(
             model=self.thinking_model,
-            max_tokens=4096,
+            max_tokens=14096,
             thinking={
                 "type": "enabled",
                 "budget_tokens": 10000,

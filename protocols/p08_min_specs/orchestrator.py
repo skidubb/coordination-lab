@@ -169,7 +169,7 @@ class MinSpecsOrchestrator:
             )
             resp = await self.client.messages.create(
                 model=self.thinking_model,
-                max_tokens=4096,
+                max_tokens=self.thinking_budget + 4096,
                 thinking={
                     "type": "enabled",
                     "budget_tokens": self.thinking_budget,

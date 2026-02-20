@@ -111,7 +111,7 @@ class DADOrchestrator:
             )
             resp = await self.client.messages.create(
                 model=self.thinking_model,
-                max_tokens=4096,
+                max_tokens=self.thinking_budget + 4096,
                 thinking={
                     "type": "enabled",
                     "budget_tokens": self.thinking_budget,
@@ -225,7 +225,7 @@ class DADOrchestrator:
         )
         resp = await self.client.messages.create(
             model=self.thinking_model,
-            max_tokens=8192,
+            max_tokens=self.thinking_budget + 8192,
             thinking={
                 "type": "enabled",
                 "budget_tokens": self.thinking_budget,
