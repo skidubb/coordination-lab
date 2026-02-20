@@ -89,12 +89,28 @@ def main():
         help="Agent keys to include (default: ceo cfo cto cmo)",
     )
     parser.add_argument("--thinking-budget", type=int, default=10_000, help="Extended thinking budget")
+    parser.add_argument("--json", action="store_true", help="Output result as JSON")
     args = parser.parse_args()
 
     agents = build_agents(args.agents)
     orchestrator = HSROrchestrator(agents=agents, thinking_budget=args.thinking_budget)
     result = asyncio.run(orchestrator.run(args.question))
-    print_result(result)
+
+    if args.json:
+        import json
+        output = {
+            "question": result.question,
+            "narratives": result.narratives,
+            "reflections": result.reflections,
+            "common_ground": result.common_ground,
+            "key_differences": result.key_differences,
+            "translation_guide": result.translation_guide,
+            "timings": result.timings,
+            "model_calls": result.model_calls,
+        }
+        print(json.dumps(output, indent=2))
+    else:
+        print_result(result)
 
 
 if __name__ == "__main__":

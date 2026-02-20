@@ -94,7 +94,7 @@ class SequentialPipelineOrchestrator:
             max_tokens=16000,
             temperature=1,  # required for extended thinking
             thinking={
-                "type": "enabled",
+                "type": "adaptive",
                 "budget_tokens": self.max_thinking_tokens,
             },
             messages=[{"role": "user", "content": prompt}],
@@ -150,7 +150,7 @@ class SequentialPipelineOrchestrator:
             max_tokens=16000,
             temperature=1,
             thinking={
-                "type": "enabled",
+                "type": "adaptive",
                 "budget_tokens": self.max_thinking_tokens,
             },
             messages=[{"role": "user", "content": prompt}],

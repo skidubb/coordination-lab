@@ -149,7 +149,7 @@ class RedBlueWhiteOrchestrator:
                 model=self.thinking_model,
                 max_tokens=12288,
                 thinking={
-                    "type": "enabled",
+                    "type": "adaptive",
                     "budget_tokens": 8192,
                 },
                 messages=[{"role": "user", "content": prompt}],
@@ -185,7 +185,7 @@ class RedBlueWhiteOrchestrator:
                 model=self.thinking_model,
                 max_tokens=12288,
                 thinking={
-                    "type": "enabled",
+                    "type": "adaptive",
                     "budget_tokens": 8192,
                 },
                 messages=[{"role": "user", "content": prompt}],
@@ -224,7 +224,7 @@ class RedBlueWhiteOrchestrator:
             model=self.thinking_model,
             max_tokens=14096,
             thinking={
-                "type": "enabled",
+                "type": "adaptive",
                 "budget_tokens": 10000,
             },
             messages=[{"role": "user", "content": prompt}],
