@@ -15,6 +15,7 @@ from typing import Any
 
 import anthropic
 
+from protocols.scoping import filter_context_for_agent, tag_context
 from .prompts import (
     SURFACE_INTERESTS_PROMPT,
     INTEREST_MAP_PROMPT,

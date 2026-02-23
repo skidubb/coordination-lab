@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 
 import anthropic
 
+from protocols.tracing import make_client
 from .prompts import (
     DEDUPLICATION_PROMPT,
     FAILURE_GENERATION_PROMPT,
@@ -57,6 +58,7 @@ class TRIZOrchestrator:
         thinking_model: str = "claude-opus-4-6",
         orchestration_model: str = "claude-haiku-4-5-20251001",
         thinking_budget: int = 10_000,
+        trace: bool = False,
     ):
         """
         Args:
@@ -65,6 +67,7 @@ class TRIZOrchestrator:
             thinking_model: Model for agent reasoning (failure gen, synthesis).
             orchestration_model: Model for mechanical steps (dedup, invert, rank).
             thinking_budget: Token budget for extended thinking on Opus calls.
+            trace: Enable JSONL execution tracing.
         """
         if not agents:
             raise ValueError("At least one agent is required")
@@ -72,7 +75,7 @@ class TRIZOrchestrator:
         self.thinking_model = thinking_model
         self.orchestration_model = orchestration_model
         self.thinking_budget = thinking_budget
-        self.client = anthropic.AsyncAnthropic()
+        self.client = make_client(protocol_id="p06_triz", trace=trace)
 
     async def run(self, question: str) -> TRIZResult:
         """Execute the full TRIZ Inversion protocol."""

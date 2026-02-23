@@ -129,6 +129,11 @@ def main() -> None:
         action="store_true",
         help="Output raw JSON instead of formatted text.",
     )
+    parser.add_argument(
+        "--trace",
+        action="store_true",
+        help="Enable JSONL execution tracing.",
+    )
 
     args = parser.parse_args()
     agents = build_agents(args.agents)
@@ -138,6 +143,7 @@ def main() -> None:
         thinking_model=args.thinking_model,
         orchestration_model=args.orchestration_model,
         thinking_budget=args.thinking_budget,
+        trace=args.trace,
     )
 
     result = asyncio.run(orchestrator.run(args.question))

@@ -79,9 +79,11 @@ def main() -> None:
         print(f"  Command:   {' '.join(cmd)}")
         return
 
-    # Run
+    # Run with tracing enabled
+    env = os.environ.copy()
+    env["COORD_TRACE"] = "1"
     print(f"Running {args.protocol} on {args.question} ({q['problem_type']})...")
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT), env=env)
 
     if result.returncode != 0:
         print(f"ERROR (exit {result.returncode}):")
@@ -97,6 +99,18 @@ def main() -> None:
     filename = f"{args.protocol}_{args.question}_{timestamp}.json"
     outpath = EVALUATIONS_DIR / filename
 
+    # Find the most recent trace file for this protocol
+    traces_dir = ROOT / "traces"
+    trace_path = None
+    if traces_dir.exists():
+        trace_files = sorted(
+            traces_dir.glob(f"{args.protocol}_*.jsonl"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        if trace_files:
+            trace_path = str(trace_files[0])
+
     envelope = {
         "protocol": args.protocol,
         "question_id": args.question,
@@ -105,6 +119,7 @@ def main() -> None:
         "agents": args.agents,
         "thinking_model": args.thinking_model,
         "timestamp": timestamp,
+        "trace_path": trace_path,
         "result": {"synthesis": output},
     }
 

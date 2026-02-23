@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 
 import anthropic
 
+from protocols.tracing import make_client
 from .prompts import SYNTHESIS_SYSTEM_PROMPT
 
 
@@ -35,6 +36,7 @@ class SynthesisOrchestrator:
         thinking_model: str = "claude-opus-4-6",
         orchestration_model: str = "claude-haiku-4-5-20251001",
         thinking_budget: int = 10_000,
+        trace: bool = False,
     ):
         """
         Args:
@@ -43,13 +45,14 @@ class SynthesisOrchestrator:
             orchestration_model: Not used in P3 (all stages are thinking tasks),
                                  kept for API consistency across protocols.
             thinking_budget: Token budget for extended thinking on Opus calls.
+            trace: Enable JSONL execution tracing.
         """
         if not agents:
             raise ValueError("At least one agent is required")
         self.agents = agents
         self.thinking_model = thinking_model
         self.thinking_budget = thinking_budget
-        self.client = anthropic.AsyncAnthropic()
+        self.client = make_client(protocol_id="p03_parallel_synthesis", trace=trace)
 
     async def run(self, question: str) -> SynthesisResult:
         """Execute the full Parallel Synthesis protocol."""

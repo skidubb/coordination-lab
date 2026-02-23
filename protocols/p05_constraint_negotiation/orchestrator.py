@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 
 import anthropic
 
+from protocols.scoping import filter_context_for_agent, tag_context
 from .constraints import ConstraintExtractor, ConstraintStore
 from .prompts import OPENING_PROMPT, REVISION_PROMPT, SYNTHESIS_PROMPT
 
@@ -123,7 +124,8 @@ class NegotiationOrchestrator:
             if round_type == "opening":
                 prompt = OPENING_PROMPT.format(question=question)
             else:
-                prior_text = _format_prior_arguments(prior_rounds)
+                context_blocks = _build_context_blocks(prior_rounds)
+                scoped_args = filter_context_for_agent(agent, context_blocks)
                 peer_constraints = self.constraint_store.format_for_prompt(
                     exclude_role=agent["name"]
                 )
@@ -131,7 +133,7 @@ class NegotiationOrchestrator:
                     question=question,
                     round_number=round_number,
                     peer_constraints=peer_constraints,
-                    prior_arguments=prior_text,
+                    prior_arguments=scoped_args,
                 )
 
             response = await self.client.messages.create(
@@ -193,3 +195,27 @@ def _format_prior_arguments(rounds: list[NegotiationRound]) -> str:
         )
         sections.append(f"{round_label}\n{args}")
     return "\n\n".join(sections)
+
+
+def _build_context_blocks(rounds: list[NegotiationRound]) -> list[dict]:
+    """Build scoped context blocks from negotiation rounds."""
+    blocks = []
+    for rnd in rounds:
+        for arg in rnd.arguments:
+            scope = "all"
+            name_lower = arg.name.lower()
+            if "financial" in name_lower or "cfo" in name_lower:
+                scope = "financial"
+            elif "technology" in name_lower or "cto" in name_lower:
+                scope = "technical"
+            elif "marketing" in name_lower or "cmo" in name_lower:
+                scope = "market"
+            elif "operations" in name_lower or "coo" in name_lower:
+                scope = "operational"
+            elif "revenue" in name_lower or "cro" in name_lower:
+                scope = "financial"
+            blocks.append(tag_context(
+                f"--- Round {rnd.round_number} ({rnd.round_type}) ---\n[{arg.name}]:\n{arg.content}",
+                scope,
+            ))
+    return blocks
