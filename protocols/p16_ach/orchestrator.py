@@ -153,7 +153,7 @@ class ACHOrchestrator:
             resp = await self.client.messages.create(
                 model=self.thinking_model,
                 max_tokens=self.thinking_budget + 4096,
-                thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+                thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
                 messages=[{"role": "user", "content": prompt}],
             )
             parsed = self._parse_json_object(self._extract_text(resp))
@@ -179,7 +179,7 @@ class ACHOrchestrator:
             resp = await self.client.messages.create(
                 model=self.thinking_model,
                 max_tokens=self.thinking_budget + 4096,
-                thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+                thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
                 messages=[{"role": "user", "content": prompt}],
             )
             parsed = self._parse_json_object(self._extract_text(resp))
@@ -349,7 +349,7 @@ class ACHOrchestrator:
         resp = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{"role": "user", "content": prompt}],
         )
         return self._parse_json_object(self._extract_text(resp))

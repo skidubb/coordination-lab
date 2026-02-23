@@ -6,32 +6,10 @@ Usage:
 
 import argparse
 import asyncio
-import sys
 import time
 
 from .orchestrator import SequentialPipelineOrchestrator, SequentialPipelineResult
-
-BUILTIN_AGENTS = {
-    "ceo": {"name": "CEO", "system_prompt": "You are a CEO focused on strategy, vision, competitive positioning, and stakeholder management."},
-    "cfo": {"name": "CFO", "system_prompt": "You are a CFO focused on financial risk, cash flow, unit economics, margins, and capital allocation."},
-    "cto": {"name": "CTO", "system_prompt": "You are a CTO focused on technical architecture, scalability, security, tech debt, and engineering execution."},
-    "cmo": {"name": "CMO", "system_prompt": "You are a CMO focused on market positioning, brand risk, customer acquisition, messaging, and competitive dynamics."},
-    "coo": {"name": "COO", "system_prompt": "You are a COO focused on operations, process execution, resource allocation, scaling, and cross-functional coordination."},
-    "cpo": {"name": "CPO", "system_prompt": "You are a CPO focused on product-market fit, user needs, roadmap priorities, and competitive differentiation."},
-    "cro": {"name": "CRO", "system_prompt": "You are a CRO focused on revenue strategy, pipeline health, sales execution, and go-to-market alignment."},
-}
-
-
-def build_agents(agent_keys: list[str]) -> list[dict]:
-    """Build ordered agent list from CLI keys."""
-    agents = []
-    for key in agent_keys:
-        key_lower = key.lower()
-        if key_lower not in BUILTIN_AGENTS:
-            print(f"Error: Unknown agent '{key}'. Available: {', '.join(BUILTIN_AGENTS.keys())}")
-            sys.exit(1)
-        agents.append(BUILTIN_AGENTS[key_lower])
-    return agents
+from protocols.agents import BUILTIN_AGENTS, build_agents
 
 
 def print_result(result: SequentialPipelineResult, elapsed: float) -> None:

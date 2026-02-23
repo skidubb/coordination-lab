@@ -5,34 +5,10 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import sys
 import textwrap
 
 from .orchestrator import AgentSpec, OneTwoFourAllOrchestrator, OneTwoFourAllResult
-
-# ── Built-in C-Suite agents ────────────────────────────────────────
-BUILTIN_AGENTS = {
-    "ceo": {"name": "CEO", "system_prompt": "You are a CEO focused on strategy, vision, competitive positioning, and stakeholder management."},
-    "cfo": {"name": "CFO", "system_prompt": "You are a CFO focused on financial risk, cash flow, unit economics, margins, and capital allocation."},
-    "cto": {"name": "CTO", "system_prompt": "You are a CTO focused on technical architecture, scalability, security, tech debt, and engineering execution."},
-    "cmo": {"name": "CMO", "system_prompt": "You are a CMO focused on market positioning, brand risk, customer acquisition, messaging, and competitive dynamics."},
-    "coo": {"name": "COO", "system_prompt": "You are a COO focused on operations, process execution, resource allocation, scaling, and cross-functional coordination."},
-    "cpo": {"name": "CPO", "system_prompt": "You are a CPO focused on product-market fit, user needs, roadmap priorities, and competitive differentiation."},
-    "cro": {"name": "CRO", "system_prompt": "You are a CRO focused on revenue strategy, pipeline health, sales execution, and go-to-market alignment."},
-}
-
-
-def build_agents(keys: list[str]) -> list[AgentSpec]:
-    """Resolve CLI agent keys to AgentSpec objects."""
-    agents = []
-    for key in keys:
-        key_lower = key.lower()
-        if key_lower not in BUILTIN_AGENTS:
-            print(f"Unknown agent: {key}. Available: {', '.join(BUILTIN_AGENTS)}")
-            sys.exit(1)
-        cfg = BUILTIN_AGENTS[key_lower]
-        agents.append(AgentSpec(name=cfg["name"], system_prompt=cfg["system_prompt"]))
-    return agents
+from protocols.agents import BUILTIN_AGENTS, build_agents
 
 
 def print_result(result: OneTwoFourAllResult) -> None:
@@ -90,7 +66,8 @@ def main():
     parser.add_argument("--thinking-budget", type=int, default=10_000, help="Extended thinking budget")
     args = parser.parse_args()
 
-    agents = build_agents(args.agents)
+    agent_dicts = build_agents(args.agents)
+    agents = [AgentSpec(name=a["name"], system_prompt=a["system_prompt"]) for a in agent_dicts]
     orchestrator = OneTwoFourAllOrchestrator(agents=agents, thinking_budget=args.thinking_budget)
     result = asyncio.run(orchestrator.run(args.question))
     print_result(result)
