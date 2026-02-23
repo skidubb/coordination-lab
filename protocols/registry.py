@@ -6,6 +6,7 @@ dynamic routing prompt generation for P0a.
 
 from __future__ import annotations
 
+import functools
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -32,8 +33,22 @@ class ProtocolCapability:
 
 
 def discover_protocols(protocols_dir: Path | None = None) -> list[ProtocolCapability]:
+    """Scan protocols/p*/capability.yaml and return all capability cards.
+
+    Results are cached when using the default protocols_dir.
+    """
+    if protocols_dir is None:
+        return _discover_protocols_cached()
+    return _discover_protocols_uncached(protocols_dir)
+
+
+@functools.lru_cache(maxsize=1)
+def _discover_protocols_cached() -> list[ProtocolCapability]:
+    return _discover_protocols_uncached(PROTOCOLS_DIR)
+
+
+def _discover_protocols_uncached(root: Path) -> list[ProtocolCapability]:
     """Scan protocols/p*/capability.yaml and return all capability cards."""
-    root = protocols_dir or PROTOCOLS_DIR
     cards: list[ProtocolCapability] = []
 
     for entry in sorted(root.iterdir()):

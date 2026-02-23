@@ -10,6 +10,7 @@ import json
 import re
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import anthropic
@@ -84,6 +85,7 @@ class RedBlueWhiteOrchestrator:
         thinking_model: str | None = None,
         orchestration_model: str | None = None,
         trace: bool = False,
+        trace_path: str | None = None,
     ) -> None:
         self.red_agents = red_agents
         self.blue_agents = blue_agents
@@ -92,7 +94,7 @@ class RedBlueWhiteOrchestrator:
             self.thinking_model = thinking_model
         if orchestration_model:
             self.orchestration_model = orchestration_model
-        self.client = make_client(protocol_id="p17_red_blue_white", trace=trace)
+        self.client = make_client(protocol_id="p17_red_blue_white", trace=trace, trace_path=Path(trace_path) if trace_path else None)
 
     # ------------------------------------------------------------------
     # Public entry point

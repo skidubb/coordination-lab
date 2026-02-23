@@ -134,6 +134,11 @@ def main() -> None:
         action="store_true",
         help="Enable JSONL execution tracing.",
     )
+    parser.add_argument(
+        "--trace-path",
+        default=None,
+        help="Explicit trace file path.",
+    )
 
     args = parser.parse_args()
     agents = build_agents(args.agents)
@@ -144,6 +149,7 @@ def main() -> None:
         orchestration_model=args.orchestration_model,
         thinking_budget=args.thinking_budget,
         trace=args.trace,
+        trace_path=args.trace_path,
     )
 
     result = asyncio.run(orchestrator.run(args.question))

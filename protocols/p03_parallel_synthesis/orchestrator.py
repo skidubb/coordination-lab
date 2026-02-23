@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import anthropic
 
@@ -37,6 +38,7 @@ class SynthesisOrchestrator:
         orchestration_model: str = "claude-haiku-4-5-20251001",
         thinking_budget: int = 10_000,
         trace: bool = False,
+        trace_path: str | None = None,
     ):
         """
         Args:
@@ -52,7 +54,7 @@ class SynthesisOrchestrator:
         self.agents = agents
         self.thinking_model = thinking_model
         self.thinking_budget = thinking_budget
-        self.client = make_client(protocol_id="p03_parallel_synthesis", trace=trace)
+        self.client = make_client(protocol_id="p03_parallel_synthesis", trace=trace, trace_path=Path(trace_path) if trace_path else None)
 
     async def run(self, question: str) -> SynthesisResult:
         """Execute the full Parallel Synthesis protocol."""

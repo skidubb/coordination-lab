@@ -63,6 +63,7 @@ def main():
     parser.add_argument("--orchestration-model", default="claude-haiku-4-5-20251001", help="Model for mechanical steps")
     parser.add_argument("--thinking-budget", type=int, default=10000, help="Token budget for extended thinking (default: 10000)")
     parser.add_argument("--trace", action="store_true", help="Enable JSONL execution tracing")
+    parser.add_argument("--trace-path", default=None, help="Explicit trace file path")
     args = parser.parse_args()
 
     agents = build_agents(args.agents, args.agent_config)
@@ -72,6 +73,7 @@ def main():
         orchestration_model=args.orchestration_model,
         thinking_budget=args.thinking_budget,
         trace=args.trace,
+        trace_path=args.trace_path,
     )
 
     print(f"Running TRIZ Inversion with {len(agents)} agents: {', '.join(a['name'] for a in agents)}")

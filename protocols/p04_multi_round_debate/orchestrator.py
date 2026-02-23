@@ -7,10 +7,11 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import anthropic
 
-from protocols.scoping import filter_context_for_agent, tag_context
+from protocols.scoping import build_context_blocks, filter_context_for_agent, get_primary_scope
 from protocols.tracing import make_client
 from .prompts import (
     FINAL_PROMPT,
@@ -26,6 +27,7 @@ class DebateArgument:
     name: str
     content: str
     round_number: int
+    scope: str = "all"
 
 
 @dataclass
@@ -52,6 +54,7 @@ class DebateOrchestrator:
         thinking_model: str = "claude-opus-4-6",
         thinking_budget: int = 10_000,
         trace: bool = False,
+        trace_path: str | None = None,
     ):
         """
         Args:
@@ -60,6 +63,7 @@ class DebateOrchestrator:
             thinking_model: Model for all debate rounds and synthesis.
             thinking_budget: Token budget for extended thinking on Opus calls.
             trace: Enable JSONL execution tracing.
+            trace_path: Explicit path for trace file (overrides auto-generated).
         """
         if not agents:
             raise ValueError("At least one agent is required")
@@ -69,7 +73,7 @@ class DebateOrchestrator:
         self.num_rounds = rounds
         self.thinking_model = thinking_model
         self.thinking_budget = thinking_budget
-        self.client = make_client(protocol_id="p04_multi_round_debate", trace=trace)
+        self.client = make_client(protocol_id="p04_multi_round_debate", trace=trace, trace_path=Path(trace_path) if trace_path else None)
 
     async def run(self, question: str) -> DebateResult:
         """Execute the full multi-round debate protocol."""
@@ -116,15 +120,14 @@ class DebateOrchestrator:
             if round_type == "opening":
                 prompt = OPENING_PROMPT.format(question=question)
             elif round_type == "final":
-                # Build scoped context blocks from prior arguments
-                context_blocks = _build_context_blocks(prior_rounds)
+                context_blocks = build_context_blocks(prior_rounds)
                 scoped_args = filter_context_for_agent(agent, context_blocks)
                 prompt = FINAL_PROMPT.format(
                     question=question,
                     prior_arguments=scoped_args,
                 )
             else:
-                context_blocks = _build_context_blocks(prior_rounds)
+                context_blocks = build_context_blocks(prior_rounds)
                 scoped_args = filter_context_for_agent(agent, context_blocks)
                 prompt = REBUTTAL_PROMPT.format(
                     question=question,
@@ -143,6 +146,7 @@ class DebateOrchestrator:
                 name=agent["name"],
                 content=_extract_text(response),
                 round_number=round_number,
+                scope=get_primary_scope(agent),
             )
 
         return await asyncio.gather(
@@ -178,26 +182,3 @@ def _extract_text(response: anthropic.types.Message) -> str:
     return "\n".join(parts)
 
 
-def _build_context_blocks(rounds: list[DebateRound]) -> list[dict]:
-    """Build scoped context blocks from debate rounds for agent filtering."""
-    blocks = []
-    for rnd in rounds:
-        for arg in rnd.arguments:
-            # Infer scope from agent name — defaults to "all" for unscoped agents
-            scope = "all"
-            name_lower = arg.name.lower()
-            if "financial" in name_lower or "cfo" in name_lower:
-                scope = "financial"
-            elif "technology" in name_lower or "cto" in name_lower:
-                scope = "technical"
-            elif "marketing" in name_lower or "cmo" in name_lower:
-                scope = "market"
-            elif "operations" in name_lower or "coo" in name_lower:
-                scope = "operational"
-            elif "revenue" in name_lower or "cro" in name_lower:
-                scope = "financial"
-            blocks.append(tag_context(
-                f"--- Round {rnd.round_number} ({rnd.round_type}) ---\n[{arg.name}]:\n{arg.content}",
-                scope,
-            ))
-    return blocks

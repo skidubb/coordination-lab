@@ -144,6 +144,11 @@ def main() -> None:
         action="store_true",
         help="Enable JSONL execution tracing.",
     )
+    parser.add_argument(
+        "--trace-path",
+        default=None,
+        help="Explicit trace file path.",
+    )
 
     args = parser.parse_args()
 
@@ -163,6 +168,7 @@ def main() -> None:
         thinking_model=args.thinking_model,
         orchestration_model=args.orchestration_model,
         trace=args.trace,
+        trace_path=args.trace_path,
     )
 
     result = asyncio.run(orchestrator.run(args.question, args.plan))

@@ -34,6 +34,7 @@ def build_command(
     question_text: str,
     agents: list[str],
     thinking_model: str | None,
+    trace_path: str | None = None,
 ) -> list[str]:
     """Build the subprocess command to run a protocol."""
     cmd = [
@@ -43,6 +44,8 @@ def build_command(
     ]
     if thinking_model:
         cmd.extend(["--thinking-model", thinking_model])
+    if trace_path:
+        cmd.extend(["--trace-path", trace_path])
     return cmd
 
 
@@ -67,7 +70,13 @@ def main() -> None:
     q = questions[args.question]
     question_text = q["question"]
 
-    cmd = build_command(args.protocol, question_text, args.agents, args.thinking_model)
+    # Generate deterministic trace path to avoid mtime race
+    traces_dir = ROOT / "traces"
+    traces_dir.mkdir(exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    trace_file = traces_dir / f"{args.protocol}_{args.question}_{timestamp}.jsonl"
+
+    cmd = build_command(args.protocol, question_text, args.agents, args.thinking_model, str(trace_file))
 
     if args.dry_run:
         print("DRY RUN — would execute:")
@@ -95,21 +104,11 @@ def main() -> None:
 
     # Save
     EVALUATIONS_DIR.mkdir(exist_ok=True)
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     filename = f"{args.protocol}_{args.question}_{timestamp}.json"
     outpath = EVALUATIONS_DIR / filename
 
-    # Find the most recent trace file for this protocol
-    traces_dir = ROOT / "traces"
-    trace_path = None
-    if traces_dir.exists():
-        trace_files = sorted(
-            traces_dir.glob(f"{args.protocol}_*.jsonl"),
-            key=lambda p: p.stat().st_mtime,
-            reverse=True,
-        )
-        if trace_files:
-            trace_path = str(trace_files[0])
+    # Use the deterministic trace path we passed to the subprocess
+    trace_path = str(trace_file) if trace_file.exists() else None
 
     envelope = {
         "protocol": args.protocol,

@@ -15,7 +15,7 @@ from typing import Any
 
 import anthropic
 
-from protocols.scoping import filter_context_for_agent, tag_context
+
 from .prompts import (
     INITIAL_ESTIMATE_PROMPT,
     REVISION_ESTIMATE_PROMPT,

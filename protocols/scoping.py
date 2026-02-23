@@ -8,6 +8,48 @@ from __future__ import annotations
 
 SCOPE_TAGS = {"financial", "operational", "market", "technical", "hr", "strategic", "all"}
 
+# Name-based scope inference fallback (used when agent dict lacks context_scope)
+_NAME_SCOPE_MAP = {
+    "financial": "financial", "cfo": "financial", "revenue": "financial", "cro": "financial",
+    "technology": "technical", "cto": "technical",
+    "marketing": "market", "cmo": "market",
+    "operations": "operational", "coo": "operational",
+}
+
+
+def get_primary_scope(agent: dict) -> str:
+    """Return the primary scope for an agent.
+
+    Uses agent's context_scope field if present, otherwise falls back
+    to name-based inference.
+    """
+    scopes = agent.get("context_scope")
+    if scopes:
+        return scopes[0]
+
+    name_lower = agent.get("name", "").lower()
+    for keyword, scope in _NAME_SCOPE_MAP.items():
+        if keyword in name_lower:
+            return scope
+    return "all"
+
+
+def build_context_blocks(rounds: list) -> list[dict]:
+    """Build scoped context blocks from debate/negotiation rounds.
+
+    Each argument's scope is read from its `scope` attribute (set at creation
+    time from the agent's context_scope). Falls back to "all".
+    """
+    blocks = []
+    for rnd in rounds:
+        for arg in rnd.arguments:
+            scope = getattr(arg, "scope", "all")
+            blocks.append(tag_context(
+                f"--- Round {rnd.round_number} ({rnd.round_type}) ---\n[{arg.name}]:\n{arg.content}",
+                scope,
+            ))
+    return blocks
+
 
 def tag_context(content: str, scope: str) -> dict:
     """Wrap content string with a scope tag."""

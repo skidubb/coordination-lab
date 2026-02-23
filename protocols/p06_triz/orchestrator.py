@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import anthropic
 
@@ -59,6 +60,7 @@ class TRIZOrchestrator:
         orchestration_model: str = "claude-haiku-4-5-20251001",
         thinking_budget: int = 10_000,
         trace: bool = False,
+        trace_path: str | None = None,
     ):
         """
         Args:
@@ -75,7 +77,7 @@ class TRIZOrchestrator:
         self.thinking_model = thinking_model
         self.orchestration_model = orchestration_model
         self.thinking_budget = thinking_budget
-        self.client = make_client(protocol_id="p06_triz", trace=trace)
+        self.client = make_client(protocol_id="p06_triz", trace=trace, trace_path=Path(trace_path) if trace_path else None)
 
     async def run(self, question: str) -> TRIZResult:
         """Execute the full TRIZ Inversion protocol."""
