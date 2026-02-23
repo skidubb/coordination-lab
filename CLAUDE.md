@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-The **Coordination Lab** is Cardinal Element's multi-agent research program. It contains 28 implemented coordination protocols (P0a-c, P3-P27) plus research documents, benchmark questions, and an evaluation harness. The goal is to empirically validate these protocols across problem types, then build an adaptive router that selects the optimal protocol for any strategic question.
+The **Coordination Lab** is Cardinal Element's multi-agent research program. It contains 48 implemented coordination protocols (P0a-c, P3-P47) plus a shared 56-agent registry, 34 benchmark questions across 8 problem types, and an evaluation harness. The goal is to empirically validate these protocols across problem types, then build an adaptive router that selects the optimal protocol for any strategic question.
 
 ## Running Protocols
 
@@ -48,9 +48,10 @@ Each protocol lives in `protocols/p{NN}_{name}/` with these files:
 
 ## Key Documents
 
-- `The Coordination Lab *.md` — Master research spec: problem type taxonomy, 30 protocols, evaluation rubrics, benchmark questions
-- `benchmark-questions.json` — Structured benchmark questions keyed by problem type (referenced by `scripts/evaluate.py`)
-- `protocol-diagrams/` — Mermaid diagrams for all 30 protocols (summary flows + detailed mechanics)
+- `The Coordination Lab *.md` — Master research spec: problem type taxonomy, protocols, evaluation rubrics, benchmark questions
+- `benchmark-questions.json` — 34 structured benchmark questions across 8 problem types (referenced by `scripts/evaluate.py`)
+- `protocols/agents.py` — Shared registry of 56 agents across 14 categories (supports `@category` group syntax)
+- `protocol-diagrams/` — Mermaid diagrams for protocols (summary flows + detailed mechanics)
 - `smoke-tests/` — Saved outputs from protocol runs for regression reference
 
 ## Protocol Taxonomy
@@ -63,6 +64,7 @@ Each protocol lives in `protocols/p{NN}_{name}/` with these files:
 - **P22-P23**: Org Theory — Sequential Pipeline, Cynefin Probe-Sense-Respond
 - **P24-P25**: Systems Thinking — Causal Loop Mapping, System Archetype Detection
 - **P26-P27**: Design Thinking — Crazy Eights, Affinity Mapping
+- **P28-P47**: Wave 2 Research — Six Hats, PMI, Llull, Wittgenstein, Tetlock, Evaporation Cloud, CRT, Satisficing, Peirce, Hegel, Klein, Popper, Boyd OODA, Duke, Aristotle, Leibniz, Kant, Whitehead, Incubation, Polya
 
 P1 (Single Agent) and P2 (Single + Context) are trivial single-call patterns with no orchestrator — they live in the C-Suite codebase only.
 

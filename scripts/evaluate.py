@@ -54,6 +54,8 @@ def main() -> None:
     parser.add_argument("--agents", "-a", nargs="+", default=["ceo", "cfo", "cto", "cmo"], help="Agent keys")
     parser.add_argument("--thinking-model", default=None, help="Override the thinking model")
     parser.add_argument("--dry-run", action="store_true", help="Show the command without executing")
+    parser.add_argument("--judge", action="store_true", help="Auto-run blind judge after protocol execution")
+    parser.add_argument("--judge-model", default="claude-opus-4-6", help="Model for judge (default: claude-opus-4-6)")
     args = parser.parse_args()
 
     # Load question
@@ -116,6 +118,23 @@ def main() -> None:
         json.dump(envelope, f, indent=2)
 
     print(f"Saved to {outpath}")
+
+    # Auto-judge if requested
+    if args.judge:
+        from scripts.judge import BlindJudge, _extract_response_text, save_result, print_result
+
+        async def _run_judge():
+            judge = BlindJudge(model=args.judge_model)
+            response_text = _extract_response_text(envelope)
+            responses = {args.protocol: response_text}
+            return await judge.evaluate(responses, question_id=args.question)
+
+        import asyncio
+        print(f"\nRunning blind judge with {args.judge_model}...")
+        judge_result = asyncio.run(_run_judge())
+        judge_path = save_result(judge_result)
+        print_result(judge_result)
+        print(f"Judge results saved to {judge_path}")
 
 
 if __name__ == "__main__":
