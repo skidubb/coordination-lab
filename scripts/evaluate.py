@@ -40,7 +40,6 @@ def build_command(
         sys.executable, "-m", f"protocols.{protocol}.run",
         "-q", question_text,
         "-a", *agents,
-        "--json",
     ]
     if thinking_model:
         cmd.extend(["--thinking-model", thinking_model])
@@ -89,13 +88,8 @@ def main() -> None:
         print(result.stderr)
         sys.exit(result.returncode)
 
-    # Parse JSON output
-    try:
-        output = json.loads(result.stdout)
-    except json.JSONDecodeError:
-        print("Protocol did not produce valid JSON. Raw output:")
-        print(result.stdout)
-        sys.exit(1)
+    # Capture output (protocols produce human-readable text, not JSON)
+    output = result.stdout
 
     # Save
     EVALUATIONS_DIR.mkdir(exist_ok=True)
@@ -111,7 +105,7 @@ def main() -> None:
         "agents": args.agents,
         "thinking_model": args.thinking_model,
         "timestamp": timestamp,
-        "result": output,
+        "result": {"synthesis": output},
     }
 
     with open(outpath, "w") as f:
@@ -121,6 +115,7 @@ def main() -> None:
 
     # Auto-judge if requested
     if args.judge:
+        sys.path.insert(0, str(ROOT))
         from scripts.judge import BlindJudge, _extract_response_text, save_result, print_result
 
         async def _run_judge():
