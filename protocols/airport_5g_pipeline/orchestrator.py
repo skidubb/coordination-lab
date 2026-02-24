@@ -8,12 +8,16 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import re
 import time
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from dotenv import load_dotenv
+load_dotenv()
 
 import anthropic
 
@@ -366,13 +370,14 @@ class Airport5GPipelineOrchestrator:
             ]
             rounds_data.append({"round": round_num, "arguments": arguments})
 
-            # Extract constraints
+            # Extract constraints (gracefully handle parse failures)
             print("  Extracting constraints...")
-            extractions = await asyncio.gather(
-                *(extractor.extract(arg["name"], arg["content"]) for arg in arguments)
-            )
-            for constraints in extractions:
-                constraint_store.add_many(constraints)
+            for arg in arguments:
+                try:
+                    constraints = await extractor.extract(arg["name"], arg["content"])
+                    constraint_store.add_many(constraints)
+                except Exception as e:
+                    print(f"    Warning: constraint extraction failed for {arg['name']}: {e}")
 
         # Synthesis
         print("  Synthesizing negotiation outcome...")
