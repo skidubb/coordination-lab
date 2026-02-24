@@ -96,6 +96,30 @@ class TracingAsyncAnthropic:
         return self._trace_path
 
 
+class BlackboardTracer:
+    """Watcher that logs blackboard writes to the same JSONL trace file."""
+
+    def __init__(self, trace_path: Path) -> None:
+        self._trace_path = trace_path
+
+    def on_entry(self, entry) -> None:
+        """Registered via bb.on_write(tracer.on_entry)."""
+        record = {
+            "type": "blackboard_write",
+            "timestamp": entry.timestamp,
+            "entry_id": entry.entry_id,
+            "topic": entry.topic,
+            "author": entry.author,
+            "stage": entry.stage,
+            "version": entry.version,
+            "content_preview": str(entry.content)[:500],
+            "metadata": entry.metadata,
+        }
+        self._trace_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self._trace_path, "a") as f:
+            f.write(json.dumps(record) + "\n")
+
+
 def make_client(
     protocol_id: str = "",
     trace: bool = False,
