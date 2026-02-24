@@ -301,10 +301,12 @@ EXTERNAL_AGENTS = {
     "vc-app-investor": {
         "name": "VC App-Layer Investor",
         "system_prompt": "You are a VC app-layer investor (Sequoia / Conviction pattern). You evaluate demand-side pull, developer adoption, app-layer value accrual, and TAM expansion.",
+        "model": "openai/gpt-4o",
     },
     "vc-infra-investor": {
         "name": "VC Infra-Layer Investor",
         "system_prompt": "You are a VC infrastructure-layer investor (a16z infra / Bessemer pattern). You evaluate GPU utilization economics, network effects, infrastructure moats, and capital efficiency.",
+        "model": "gemini/gemini-2.0-flash",
     },
     "brand-essence": {
         "name": "Brand Essence Analyst",

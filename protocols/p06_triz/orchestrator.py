@@ -10,8 +10,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import anthropic
-
+from protocols.llm import agent_complete, extract_text
 from protocols.tracing import make_client
 from .prompts import (
     DEDUPLICATION_PROMPT,
@@ -124,15 +123,13 @@ class TRIZOrchestrator:
         prompt = FAILURE_GENERATION_PROMPT.format(question=question)
 
         async def query_agent(agent: dict) -> str:
-            messages = [{"role": "user", "content": prompt}]
-            response = await self.client.messages.create(
-                model=self.thinking_model,
-                max_tokens=self.thinking_budget + 4096,
-                thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
-                system=agent["system_prompt"],
-                messages=messages,
+            return await agent_complete(
+                agent=agent,
+                fallback_model=self.thinking_model,
+                messages=[{"role": "user", "content": prompt}],
+                thinking_budget=self.thinking_budget,
+                anthropic_client=self.client,
             )
-            return _extract_text(response)
 
         return await asyncio.gather(
             *(query_agent(agent) for agent in self.agents)
@@ -256,16 +253,7 @@ class TRIZOrchestrator:
                 ),
             }],
         )
-        return _extract_text(response)
-
-
-def _extract_text(response: anthropic.types.Message) -> str:
-    """Extract text from a response that may contain thinking blocks."""
-    parts = []
-    for block in response.content:
-        if hasattr(block, "text"):
-            parts.append(block.text)
-    return "\n".join(parts)
+        return extract_text(response)
 
 
 def _parse_json_array(text: str) -> list[dict]:
