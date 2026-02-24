@@ -163,13 +163,15 @@ def synthesis_stage(
         question_entry = bb.read_latest("question")
         question = question_entry.content if question_entry else ""
 
-        prompt = prompt_template.format(
-            question=question,
-            input=question,
-            perspectives=sections.get(topics_in[0], ""),
-            ranked_results=sections.get(topics_in[-1], "") if len(topics_in) > 1 else "",
-            **{t: sections.get(t, "") for t in topics_in},
-        )
+        # Build format kwargs from topic sections + standard keys
+        fmt = {t: sections.get(t, "") for t in topics_in}
+        fmt["question"] = question
+        fmt["input"] = question
+        if "perspectives" not in fmt:
+            fmt["perspectives"] = sections.get(topics_in[0], "")
+        if "ranked_results" not in fmt and len(topics_in) > 1:
+            fmt["ranked_results"] = sections.get(topics_in[-1], "")
+        prompt = prompt_template.format(**fmt)
 
         response = await client.messages.create(
             model=thinking_model,
