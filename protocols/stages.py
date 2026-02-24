@@ -107,12 +107,14 @@ def mechanical_stage(
         combined = "\n\n".join(
             f"=== {e.author} ===\n{e.content}" for e in entries
         )
-        prompt = prompt_template.format(
-            input=combined,
-            all_failures=combined,
-            failures_json=combined,
-            failures_and_solutions=combined,
-        )
+        import string
+        keys_needed = {
+            fname for _, fname, _, _ in string.Formatter().parse(prompt_template)
+            if fname is not None
+        }
+        fmt = {key: combined for key in keys_needed}
+        fmt["input"] = combined
+        prompt = prompt_template.format(**fmt)
 
         response = await client.messages.create(
             model=orchestration_model,
@@ -163,14 +165,22 @@ def synthesis_stage(
         question_entry = bb.read_latest("question")
         question = question_entry.content if question_entry else ""
 
-        # Build format kwargs from topic sections + standard keys
+        # Discover which format keys the template expects
+        import string
+        keys_needed = {
+            fname for _, fname, _, _ in string.Formatter().parse(prompt_template)
+            if fname is not None
+        }
+
+        # Build format kwargs: topic sections + standard keys
         fmt = {t: sections.get(t, "") for t in topics_in}
         fmt["question"] = question
         fmt["input"] = question
-        if "perspectives" not in fmt:
-            fmt["perspectives"] = sections.get(topics_in[0], "")
-        if "ranked_results" not in fmt and len(topics_in) > 1:
-            fmt["ranked_results"] = sections.get(topics_in[-1], "")
+        # Map any remaining unresolved keys to the best available section
+        all_content = "\n\n".join(sections.values())
+        for key in keys_needed:
+            if key not in fmt:
+                fmt[key] = sections.get(key, all_content)
         prompt = prompt_template.format(**fmt)
 
         response = await client.messages.create(
