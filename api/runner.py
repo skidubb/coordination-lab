@@ -20,7 +20,7 @@ from sqlmodel import Session
 
 from api.database import engine
 from api.models import AgentOutput, Run, RunStep
-from protocols.llm import set_event_queue
+from protocols.llm import set_event_queue, set_no_tools
 
 
 # ── Protocol → orchestrator class mapping ────────────────────────────────────
@@ -137,6 +137,7 @@ async def run_protocol_stream(
     thinking_model: str = "claude-opus-4-6",
     orchestration_model: str = "claude-haiku-4-5-20251001",
     rounds: int | None = None,
+    no_tools: bool = False,
 ) -> AsyncGenerator[str, None]:
     """Execute a protocol and yield SSE events."""
 
@@ -174,6 +175,7 @@ async def run_protocol_stream(
         # Set up event queue for live tool visibility
         queue: asyncio.Queue = asyncio.Queue()
         set_event_queue(queue)
+        set_no_tools(no_tools)
         tool_events: list[dict] = []
 
         t0 = time.time()
@@ -330,9 +332,10 @@ async def run_pipeline_stream(
 
             orchestrator = OrchestratorClass(**kwargs)
 
-            # Set up event queue for live tool visibility
+            # Set up event queue and tool controls for this step
             pip_queue: asyncio.Queue = asyncio.Queue()
             set_event_queue(pip_queue)
+            set_no_tools(step.get("no_tools", False))
 
             pip_task = asyncio.create_task(orchestrator.run(step_question))
 

@@ -63,6 +63,7 @@ export interface Protocol {
   supports_rounds: boolean
   when_to_use: string
   when_not_to_use: string
+  tools_enabled: boolean
 }
 
 export interface Team {
@@ -93,6 +94,7 @@ export interface PipelineStep {
   thinking_model: string
   orchestration_model: string
   output_passthrough: boolean
+  no_tools: boolean
 }
 
 export interface ToolCallEvent {

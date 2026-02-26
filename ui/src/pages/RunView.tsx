@@ -14,6 +14,7 @@ export default function RunView() {
   const [protocolKey, setProtocolKey] = useState('')
   const [question, setQuestion] = useState('')
   const [rounds, setRounds] = useState<number>(3)
+  const [toolsEnabled, setToolsEnabled] = useState(true)
 
   useEffect(() => { fetchProtocols(); fetchAgents() }, [fetchProtocols, fetchAgents])
 
@@ -29,6 +30,7 @@ export default function RunView() {
       question,
       agent_keys: currentTeamKeys,
       rounds: proto?.supports_rounds ? rounds : undefined,
+      no_tools: !toolsEnabled,
     })
   }
 
@@ -48,12 +50,17 @@ export default function RunView() {
               <label className="text-xs text-text-muted mb-1 block">Protocol</label>
               <select
                 value={protocolKey}
-                onChange={e => setProtocolKey(e.target.value)}
+                onChange={e => {
+                  const key = e.target.value
+                  setProtocolKey(key)
+                  const p = protocols.find(x => x.key === key)
+                  setToolsEnabled(p?.tools_enabled ?? true)
+                }}
                 className="w-full px-3 py-2 rounded-lg bg-white border border-border text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="">Select a protocol...</option>
                 {protocols.map(p => (
-                  <option key={p.key} value={p.key}>{p.name} ({p.category})</option>
+                  <option key={p.key} value={p.key}>{p.name} ({p.problem_types[0] || p.category})</option>
                 ))}
               </select>
             </div>
@@ -68,19 +75,30 @@ export default function RunView() {
             </div>
           </div>
 
-          {proto?.supports_rounds && (
-            <div className="mb-4">
-              <label className="text-xs text-text-muted mb-1 block">Rounds</label>
+          <div className="flex items-center gap-6 mb-4">
+            {proto?.supports_rounds && (
+              <div>
+                <label className="text-xs text-text-muted mb-1 block">Rounds</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={rounds}
+                  onChange={e => setRounds(parseInt(e.target.value) || 3)}
+                  className="w-20 px-3 py-2 rounded-lg bg-white border border-border text-sm text-text"
+                />
+              </div>
+            )}
+            <label className="flex items-center gap-2 text-sm text-text cursor-pointer">
               <input
-                type="number"
-                min={1}
-                max={10}
-                value={rounds}
-                onChange={e => setRounds(parseInt(e.target.value) || 3)}
-                className="w-20 px-3 py-2 rounded-lg bg-white border border-border text-sm text-text"
+                type="checkbox"
+                checked={toolsEnabled}
+                onChange={e => setToolsEnabled(e.target.checked)}
+                className="rounded border-border"
               />
-            </div>
-          )}
+              Enable tools
+            </label>
+          </div>
 
           <div className="mb-4">
             <label className="text-xs text-text-muted mb-1 block">Question</label>

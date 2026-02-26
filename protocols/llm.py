@@ -20,6 +20,17 @@ import litellm
 # Context-propagated event queue for live tool visibility
 _event_queue: ContextVar[asyncio.Queue | None] = ContextVar("_event_queue", default=None)
 
+# Context-propagated no_tools flag — protocol-level tool disable
+_no_tools: ContextVar[bool] = ContextVar("_no_tools", default=False)
+
+
+def set_no_tools(val: bool) -> None:
+    _no_tools.set(val)
+
+
+def get_no_tools() -> bool:
+    return _no_tools.get()
+
 
 def set_event_queue(q: asyncio.Queue) -> None:
     _event_queue.set(q)
@@ -61,6 +72,7 @@ async def agent_complete(
     Returns:
         Response text as a string.
     """
+    effective_no_tools = no_tools or _no_tools.get()
     system_prompt = system or agent.get("system_prompt", "")
     agent_model = agent.get("model")
 
@@ -80,7 +92,7 @@ async def agent_complete(
         if _is_anthropic_model(agent_model):
             kwargs["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
 
-        if not no_tools and tools:
+        if not effective_no_tools and tools:
             kwargs["tools"] = tools
 
         response = await litellm.acompletion(**kwargs)
@@ -93,7 +105,7 @@ async def agent_complete(
         )
 
     # Resolve tools: explicit param > agent-level schemas > agent tool key strings
-    if not no_tools:
+    if not effective_no_tools:
         effective_tools = tools
         if not effective_tools:
             effective_tools = agent.get("tools_schemas")

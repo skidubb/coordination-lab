@@ -67,6 +67,7 @@ class PipelineStep(SQLModel, table=True):
     thinking_model: str = ""
     orchestration_model: str = ""
     output_passthrough: bool = False
+    no_tools: bool = False
 
 
 # ── Runs ──────────────────────────────────────────────────────────────────────

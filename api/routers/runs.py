@@ -25,6 +25,7 @@ class ProtocolRunRequest(BaseModel):
     thinking_model: str = "claude-opus-4-6"
     orchestration_model: str = "claude-haiku-4-5-20251001"
     rounds: int | None = None
+    no_tools: bool = False
 
 
 class PipelineStepRequest(BaseModel):
@@ -34,6 +35,7 @@ class PipelineStepRequest(BaseModel):
     orchestration_model: str = "claude-haiku-4-5-20251001"
     rounds: int | None = None
     output_passthrough: bool = True
+    no_tools: bool = False
 
 
 class PipelineRunRequest(BaseModel):
@@ -149,6 +151,7 @@ async def start_protocol_run(payload: ProtocolRunRequest) -> EventSourceResponse
             thinking_model=payload.thinking_model,
             orchestration_model=payload.orchestration_model,
             rounds=payload.rounds,
+            no_tools=payload.no_tools,
         ),
         media_type="text/event-stream",
     )
@@ -177,6 +180,7 @@ async def start_pipeline_run(payload: PipelineRunRequest) -> EventSourceResponse
             "orchestration_model": s.orchestration_model,
             "rounds": s.rounds,
             "output_passthrough": s.output_passthrough,
+            "no_tools": s.no_tools,
         }
         for s in payload.steps
     ]

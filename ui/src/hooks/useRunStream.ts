@@ -44,6 +44,7 @@ export function useRunStream() {
     thinking_model?: string
     orchestration_model?: string
     rounds?: number | null
+    no_tools?: boolean
   }) => {
     abortRef.current?.abort()
     const controller = new AbortController()
@@ -109,6 +110,7 @@ export function useRunStream() {
       orchestration_model?: string
       rounds?: number | null
       output_passthrough?: boolean
+      no_tools?: boolean
     }[]
   }) => {
     abortRef.current?.abort()
