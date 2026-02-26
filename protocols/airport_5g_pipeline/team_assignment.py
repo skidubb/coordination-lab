@@ -6,6 +6,9 @@ import json
 import re
 from typing import Any
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import anthropic
 
 from .prompts import TEAM_ASSIGNMENT_PROMPT
