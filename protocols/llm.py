@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from contextvars import ContextVar
 
 import anthropic
@@ -72,6 +73,11 @@ async def agent_complete(
     Returns:
         Response text as a string.
     """
+    # Production agent detection: if agent has chat(), use it directly
+    if hasattr(agent, "chat") and callable(agent.chat):
+        user_msg = messages[-1]["content"] if messages else ""
+        return await agent.chat(user_msg)
+
     effective_no_tools = no_tools or _no_tools.get()
     system_prompt = system or agent.get("system_prompt", "")
     agent_model = agent.get("model")
@@ -90,7 +96,7 @@ async def agent_complete(
         }
 
         if _is_anthropic_model(agent_model):
-            kwargs["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
+            kwargs["thinking"] = {"type": "adaptive", "budget_tokens": thinking_budget}
 
         if not effective_no_tools and tools:
             kwargs["tools"] = tools
@@ -123,7 +129,7 @@ async def agent_complete(
     create_kwargs = {
         "model": fallback_model,
         "max_tokens": thinking_budget + 4096 if max_tokens == 14_096 else max_tokens,
-        "thinking": {"type": "enabled", "budget_tokens": thinking_budget},
+        "thinking": {"type": "adaptive", "budget_tokens": thinking_budget},
         "system": system_prompt,
         "messages": messages,
     }
@@ -215,3 +221,91 @@ def extract_text(response) -> str:
         return response.choices[0].message.content
 
     return str(response)
+
+
+log = logging.getLogger(__name__)
+
+
+def gather_with_exceptions(*coros_or_futures):
+    """Like asyncio.gather but with return_exceptions=True and exception filtering.
+
+    Returns only successful results; logs warnings for failures.
+    Use when partial results are acceptable (most parallel agent queries).
+    """
+    return asyncio.gather(*coros_or_futures, return_exceptions=True)
+
+
+def filter_exceptions(results: list, label: str = "gather") -> list:
+    """Filter exceptions from gather_with_exceptions results, logging warnings."""
+    good = []
+    for r in results:
+        if isinstance(r, BaseException):
+            log.warning("%s: agent failed: %s", label, r)
+        else:
+            good.append(r)
+    return good
+
+
+def parse_json_array(text: str) -> list[dict]:
+    """Extract a JSON array from LLM output that may contain markdown fences.
+
+    Handles truncated JSON by attempting repair (closing brackets/braces).
+    """
+    import re
+
+    text = text.strip()
+    # Try to find JSON array between markdown fences
+    if "```" in text:
+        match = re.search(r"```(?:json)?\s*\n(.*?)```", text, re.DOTALL)
+        if match:
+            text = match.group(1).strip()
+    # Fallback: find the first [ ... ] in the text
+    if not text.startswith("["):
+        start = text.find("[")
+        end = text.rfind("]")
+        if start != -1 and end != -1:
+            text = text[start : end + 1]
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Attempt truncation repair: close open strings/objects/arrays
+        repaired = text.rstrip()
+        if repaired.endswith(","):
+            repaired = repaired[:-1]
+        open_braces = repaired.count("{") - repaired.count("}")
+        open_brackets = repaired.count("[") - repaired.count("]")
+        repaired += "}" * max(0, open_braces)
+        repaired += "]" * max(0, open_brackets)
+        if repaired.count('"') % 2 == 1:
+            repaired += '"'
+            open_braces = repaired.count("{") - repaired.count("}")
+            open_brackets = repaired.count("[") - repaired.count("]")
+            repaired += "}" * max(0, open_braces)
+            repaired += "]" * max(0, open_brackets)
+        try:
+            return json.loads(repaired)
+        except json.JSONDecodeError:
+            raise ValueError(f"Cannot parse JSON array (len={len(text)}): {text[:200]}...")
+
+
+def parse_json_object(text: str) -> dict:
+    """Extract the first JSON object from text."""
+    import re
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            pass
+    return {}

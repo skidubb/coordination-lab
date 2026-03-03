@@ -12,6 +12,7 @@ from sse_starlette.sse import EventSourceResponse
 from api.database import engine, get_session
 from api.models import AgentOutput, Run, RunStep
 from api.runner import run_pipeline_stream, run_protocol_stream
+from protocols.config import THINKING_MODEL, ORCHESTRATION_MODEL
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 
@@ -22,8 +23,8 @@ class ProtocolRunRequest(BaseModel):
     protocol_key: str
     question: str
     agent_keys: list[str]
-    thinking_model: str = "claude-opus-4-6"
-    orchestration_model: str = "claude-haiku-4-5-20251001"
+    thinking_model: str = THINKING_MODEL
+    orchestration_model: str = ORCHESTRATION_MODEL
     rounds: int | None = None
     no_tools: bool = False
 
@@ -31,8 +32,8 @@ class ProtocolRunRequest(BaseModel):
 class PipelineStepRequest(BaseModel):
     protocol_key: str
     question_template: str
-    thinking_model: str = "claude-opus-4-6"
-    orchestration_model: str = "claude-haiku-4-5-20251001"
+    thinking_model: str = THINKING_MODEL
+    orchestration_model: str = ORCHESTRATION_MODEL
     rounds: int | None = None
     output_passthrough: bool = True
     no_tools: bool = False

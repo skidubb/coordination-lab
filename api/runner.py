@@ -20,6 +20,7 @@ from sqlmodel import Session
 
 from api.database import engine
 from api.models import AgentOutput, Run, RunStep
+from protocols.config import THINKING_MODEL, ORCHESTRATION_MODEL
 from protocols.llm import set_event_queue, set_no_tools
 
 
@@ -134,8 +135,8 @@ async def run_protocol_stream(
     protocol_key: str,
     question: str,
     agent_keys: list[str],
-    thinking_model: str = "claude-opus-4-6",
-    orchestration_model: str = "claude-haiku-4-5-20251001",
+    thinking_model: str = THINKING_MODEL,
+    orchestration_model: str = ORCHESTRATION_MODEL,
     rounds: int | None = None,
     no_tools: bool = False,
 ) -> AsyncGenerator[str, None]:
@@ -324,8 +325,8 @@ async def run_pipeline_stream(
 
             kwargs: dict[str, Any] = {
                 "agents": agents,
-                "thinking_model": step.get("thinking_model", "claude-opus-4-6"),
-                "orchestration_model": step.get("orchestration_model", "claude-haiku-4-5-20251001"),
+                "thinking_model": step.get("thinking_model", THINKING_MODEL),
+                "orchestration_model": step.get("orchestration_model", ORCHESTRATION_MODEL),
             }
             if step.get("rounds"):
                 kwargs["rounds"] = step["rounds"]

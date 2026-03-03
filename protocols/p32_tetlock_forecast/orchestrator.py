@@ -10,7 +10,9 @@ import re
 from dataclasses import dataclass
 
 import anthropic
+from protocols.llm import extract_text, parse_json_object
 
+from protocols.config import THINKING_MODEL, ORCHESTRATION_MODEL
 from .prompts import (
     BASE_RATE_PROMPT,
     EXTREMIZING_AGGREGATION_PROMPT,
@@ -36,8 +38,8 @@ class TetlockOrchestrator:
     def __init__(
         self,
         agents: list[dict],
-        thinking_model: str = "claude-opus-4-6",
-        orchestration_model: str = "claude-haiku-4-5-20251001",
+        thinking_model: str = THINKING_MODEL,
+        orchestration_model: str = ORCHESTRATION_MODEL,
         thinking_budget: int = 10_000,
     ):
         """
@@ -91,21 +93,21 @@ class TetlockOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             system=agent["system_prompt"],
             messages=[{
                 "role": "user",
                 "content": FERMI_DECOMPOSITION_PROMPT.format(question=question),
             }],
         )
-        return _extract_text(response)
+        return extract_text(response)
 
     async def _base_rate_establishment(self, question: str, decomposition: str, agent: dict) -> str:
         """Step 2: Establish outside-view base rates for each sub-question."""
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             system=agent["system_prompt"],
             messages=[{
                 "role": "user",
@@ -114,14 +116,14 @@ class TetlockOrchestrator:
                 ),
             }],
         )
-        return _extract_text(response)
+        return extract_text(response)
 
     async def _inside_view_adjustment(self, question: str, base_rates: str, agent: dict) -> str:
         """Step 3: Adjust base rates with case-specific inside-view factors."""
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             system=agent["system_prompt"],
             messages=[{
                 "role": "user",
@@ -130,14 +132,14 @@ class TetlockOrchestrator:
                 ),
             }],
         )
-        return _extract_text(response)
+        return extract_text(response)
 
     async def _extremizing_aggregation(self, question: str, adjustments: str, agent: dict) -> str:
         """Step 4: Apply extremizing formula and produce final probability."""
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             system=agent["system_prompt"],
             messages=[{
                 "role": "user",
@@ -146,14 +148,14 @@ class TetlockOrchestrator:
                 ),
             }],
         )
-        return _extract_text(response)
+        return extract_text(response)
 
     async def _synthesize(self, result: ForecastResult) -> str:
         """Produce final human-readable forecast summary."""
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             messages=[{
                 "role": "user",
                 "content": SYNTHESIS_PROMPT.format(
@@ -165,29 +167,8 @@ class TetlockOrchestrator:
                 ),
             }],
         )
-        return _extract_text(response)
+        return extract_text(response)
 
 
-def _extract_text(response: anthropic.types.Message) -> str:
-    """Extract text from a response that may contain thinking blocks."""
-    parts = []
-    for block in response.content:
-        if hasattr(block, "text"):
-            parts.append(block.text)
-    return "\n".join(parts)
 
 
-def _parse_json_object(text: str) -> dict:
-    """Extract a JSON object from LLM output that may contain markdown fences."""
-    text = text.strip()
-    if "```" in text:
-        match = re.search(r"```(?:json)?\s*\n(.*?)```", text, re.DOTALL)
-        if match:
-            text = match.group(1).strip()
-    if not text.startswith("{"):
-        start = text.find("{")
-        end = text.rfind("}")
-        if start != -1 and end != -1:
-            text = text[start:end + 1]
-    import json
-    return json.loads(text)

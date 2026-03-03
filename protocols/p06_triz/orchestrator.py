@@ -10,8 +10,9 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from protocols.llm import agent_complete, extract_text
+from protocols.llm import agent_complete, extract_text, parse_json_array, filter_exceptions
 from protocols.tracing import make_client
+from protocols.config import THINKING_MODEL, ORCHESTRATION_MODEL
 from .prompts import (
     DEDUPLICATION_PROMPT,
     FAILURE_GENERATION_PROMPT,
@@ -55,8 +56,8 @@ class TRIZOrchestrator:
     def __init__(
         self,
         agents: list[dict],
-        thinking_model: str = "claude-opus-4-6",
-        orchestration_model: str = "claude-haiku-4-5-20251001",
+        thinking_model: str = THINKING_MODEL,
+        orchestration_model: str = ORCHESTRATION_MODEL,
         thinking_budget: int = 10_000,
         trace: bool = False,
         trace_path: str | None = None,
@@ -131,9 +132,12 @@ class TRIZOrchestrator:
                 anthropic_client=self.client,
             )
 
-        return await asyncio.gather(
-            *(query_agent(agent) for agent in self.agents)
+        _results = await asyncio.gather(
+            *(query_agent(agent) for agent in self.agents),
+            return_exceptions=True,
         )
+        _results = filter_exceptions(_results, label="p06_triz")
+        return _results
 
     async def _deduplicate(self, all_failures: str) -> list[FailureMode]:
         """Stage 3: Deduplicate and categorize failure modes."""
@@ -145,7 +149,7 @@ class TRIZOrchestrator:
                 "content": DEDUPLICATION_PROMPT.format(all_failures=all_failures),
             }],
         )
-        data = _parse_json_array(response.content[0].text)
+        data = parse_json_array(extract_text(response))
         return [
             FailureMode(
                 id=item["id"],
@@ -165,13 +169,13 @@ class TRIZOrchestrator:
         )
         response = await self.client.messages.create(
             model=self.orchestration_model,
-            max_tokens=4096,
+            max_tokens=8192,
             messages=[{
                 "role": "user",
                 "content": INVERSION_PROMPT.format(failures_json=failures_json),
             }],
         )
-        data = _parse_json_array(response.content[0].text)
+        data = parse_json_array(extract_text(response))
         return [
             Solution(
                 failure_id=item["failure_id"],
@@ -201,13 +205,13 @@ class TRIZOrchestrator:
         )
         response = await self.client.messages.create(
             model=self.orchestration_model,
-            max_tokens=2048,
+            max_tokens=4096,
             messages=[{
                 "role": "user",
                 "content": RANKING_PROMPT.format(failures_and_solutions=combined),
             }],
         )
-        data = _parse_json_array(response.content[0].text)
+        data = parse_json_array(extract_text(response))
         score_map = {item["failure_id"]: item for item in data}
         for f in failures:
             if f.id in score_map:
@@ -245,7 +249,7 @@ class TRIZOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             messages=[{
                 "role": "user",
                 "content": SYNTHESIS_PROMPT.format(
@@ -256,19 +260,3 @@ class TRIZOrchestrator:
         return extract_text(response)
 
 
-def _parse_json_array(text: str) -> list[dict]:
-    """Extract a JSON array from LLM output that may contain markdown fences."""
-    text = text.strip()
-    # Try to find JSON array between markdown fences
-    if "```" in text:
-        import re
-        match = re.search(r"```(?:json)?\s*\n(.*?)```", text, re.DOTALL)
-        if match:
-            text = match.group(1).strip()
-    # Fallback: find the first [ ... ] in the text
-    if not text.startswith("["):
-        start = text.find("[")
-        end = text.rfind("]")
-        if start != -1 and end != -1:
-            text = text[start:end + 1]
-    return json.loads(text)

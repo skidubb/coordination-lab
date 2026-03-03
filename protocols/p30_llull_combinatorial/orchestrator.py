@@ -10,7 +10,9 @@ import re
 from dataclasses import dataclass, field
 
 import anthropic
+from protocols.llm import extract_text, parse_json_array
 
+from protocols.config import THINKING_MODEL, ORCHESTRATION_MODEL
 from .prompts import (
     DEFINE_DISKS_PROMPT,
     EVALUATE_COMBINATIONS_PROMPT,
@@ -36,8 +38,8 @@ class CombinatorialOrchestrator:
     def __init__(
         self,
         agents: list[dict],
-        thinking_model: str = "claude-opus-4-6",
-        orchestration_model: str = "claude-haiku-4-5-20251001",
+        thinking_model: str = THINKING_MODEL,
+        orchestration_model: str = ORCHESTRATION_MODEL,
         thinking_budget: int = 10_000,
     ):
         if not agents:
@@ -80,15 +82,15 @@ class CombinatorialOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             system=self.agents[0]["system_prompt"],
             messages=[{
                 "role": "user",
                 "content": DEFINE_DISKS_PROMPT.format(question=question),
             }],
         )
-        text = _extract_text(response)
-        return _parse_json_array(text)
+        text = extract_text(response)
+        return parse_json_array(text)
 
     async def _generate_combinations(self, question: str, disks_text: str) -> str:
         """Phase 2: Generator agent produces all combinations without judgment."""
@@ -96,7 +98,7 @@ class CombinatorialOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 8192,
-            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             system=self.agents[0]["system_prompt"] + "\n\nYou are acting as the GENERATOR. Your only job is to produce combinations. Do NOT evaluate or filter.",
             messages=[{
                 "role": "user",
@@ -105,7 +107,7 @@ class CombinatorialOrchestrator:
                 ),
             }],
         )
-        return _extract_text(response)
+        return extract_text(response)
 
     async def _evaluate_combinations(self, question: str, combinations: str) -> str:
         """Phase 3: Evaluator agent classifies combinations (separate from Generator)."""
@@ -114,7 +116,7 @@ class CombinatorialOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 8192,
-            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             system=evaluator["system_prompt"] + "\n\nYou are acting as the EVALUATOR. You judge combinations you did NOT generate. Be rigorous but open to surprise.",
             messages=[{
                 "role": "user",
@@ -123,14 +125,14 @@ class CombinatorialOrchestrator:
                 ),
             }],
         )
-        return _extract_text(response)
+        return extract_text(response)
 
     async def _synthesize(self, question: str, disks_text: str, evaluations: str) -> str:
         """Phase 4: Synthesize non-obvious combinations into actionable insights."""
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
+            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
             messages=[{
                 "role": "user",
                 "content": SYNTHESIS_PROMPT.format(
@@ -140,7 +142,7 @@ class CombinatorialOrchestrator:
                 ),
             }],
         )
-        return _extract_text(response)
+        return extract_text(response)
 
     @staticmethod
     def _format_disks(disks: list[dict]) -> str:
@@ -162,25 +164,5 @@ class CombinatorialOrchestrator:
         return non_obvious, total
 
 
-def _extract_text(response: anthropic.types.Message) -> str:
-    """Extract text from a response that may contain thinking blocks."""
-    parts = []
-    for block in response.content:
-        if hasattr(block, "text"):
-            parts.append(block.text)
-    return "\n".join(parts)
 
 
-def _parse_json_array(text: str) -> list[dict]:
-    """Extract a JSON array from LLM output that may contain markdown fences."""
-    text = text.strip()
-    if "```" in text:
-        match = re.search(r"```(?:json)?\s*\n(.*?)```", text, re.DOTALL)
-        if match:
-            text = match.group(1).strip()
-    if not text.startswith("["):
-        start = text.find("[")
-        end = text.rfind("]")
-        if start != -1 and end != -1:
-            text = text[start:end + 1]
-    return json.loads(text)
