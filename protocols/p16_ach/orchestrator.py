@@ -6,15 +6,12 @@ Generate hypotheses, score evidence for/against each, eliminate least supported.
 from __future__ import annotations
 
 import asyncio
-import json
-import re
 import time
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import anthropic
 from protocols.llm import extract_text, parse_json_object, filter_exceptions
 
 from protocols.tracing import make_client

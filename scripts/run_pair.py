@@ -158,7 +158,7 @@ async def run_pair(pair_id: int, agent_names: list[str], thinking_model: str) ->
         print(f"  Saved: {baseline_path.name}")
 
         # Run emergence detection
-        print(f"  Running emergence detection...")
+        print("  Running emergence detection...")
         result = await detector.detect(
             complex_output=complex_output,
             baseline_output=baseline_output,
@@ -183,7 +183,7 @@ def dry_run(pair_id: int, agent_names: list[str]) -> None:
     print(f"  Baseline: {pair.baseline_protocol}")
     print(f"  Rationale: {pair.rationale}")
     print(f"  Agents:   {', '.join(agent_names)}")
-    print(f"  Questions:")
+    print("  Questions:")
     for q in questions:
         print(f"    {q['id']}: {q['question'][:80]}{'...' if len(q['question']) > 80 else ''}")
         print(f"         type={q['problem_type']}")

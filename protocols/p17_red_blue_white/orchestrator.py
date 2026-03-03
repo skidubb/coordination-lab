@@ -6,14 +6,11 @@ Adversarial stress-testing: Red attacks, Blue defends, White adjudicates.
 from __future__ import annotations
 
 import asyncio
-import json
-import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import anthropic
 from protocols.llm import extract_text, parse_json_object, filter_exceptions
 
 from protocols.scoping import filter_context_for_agent, tag_context

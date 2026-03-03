@@ -3,7 +3,6 @@
 Agent A -> Agent B -> Agent C — each builds on prior output.
 """
 
-import asyncio
 import json
 from dataclasses import dataclass, field
 

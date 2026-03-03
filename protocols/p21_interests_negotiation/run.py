@@ -8,7 +8,7 @@ import asyncio
 import json
 
 from .orchestrator import InterestsNegotiationOrchestrator, NegotiationResult
-from protocols.agents import BUILTIN_AGENTS, build_agents
+from protocols.agents import build_agents
 
 
 def print_result(result: NegotiationResult) -> None:

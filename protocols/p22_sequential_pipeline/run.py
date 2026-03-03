@@ -58,7 +58,7 @@ def main():
 
     agents = build_agents(args.agents, mode=args.mode)
 
-    print(f"P22: Sequential Pipeline")
+    print("P22: Sequential Pipeline")
     print(f"Question: {args.question}")
     print(f"Pipeline: {' -> '.join(a['name'] for a in agents)}")
     print()
