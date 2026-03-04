@@ -38,7 +38,7 @@ P12_DEF = ProtocolDef(
         ),
         Stage(
             name="synthesize",
-            trigger=after("scoring_round_3"),
+            trigger=after("scoring_complete"),
             execute=synthesis_stage(
                 topics_in=["ideas", "scoring_round_1", "scoring_round_2", "scoring_round_3"],
                 topic_out="synthesis",

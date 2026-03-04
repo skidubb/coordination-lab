@@ -47,7 +47,7 @@ P35_DEF = ProtocolDef(
         ),
         Stage(
             name="synthesize",
-            trigger=after("satisfice_round_1"),
+            trigger=after("satisfice_complete"),
             execute=synthesis_stage(
                 topics_in=["criteria", "satisfice_round_1"],
                 topic_out="synthesis",

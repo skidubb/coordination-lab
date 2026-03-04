@@ -38,7 +38,7 @@ P05_DEF = ProtocolDef(
         ),
         Stage(
             name="synthesize",
-            trigger=after("negotiation_round_3"),
+            trigger=after("negotiation_complete"),
             execute=synthesis_stage(
                 topics_in=[
                     "negotiation_round_0",

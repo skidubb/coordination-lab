@@ -7,7 +7,11 @@ Agent stages use agent_complete() from llm.py. Mechanical stages use Anthropic d
 from __future__ import annotations
 
 import asyncio
+import logging
+import string
 from typing import Any, Callable
+
+logger = logging.getLogger(__name__)
 
 
 from protocols.blackboard import Blackboard, BlackboardEntry
@@ -44,7 +48,10 @@ def parallel_agent_stage(
             )
             bb.write(topic_out, response, author=agent["name"], stage=topic_out)
 
-        await asyncio.gather(*(query_agent(a) for a in agents), return_exceptions=True)
+        results = await asyncio.gather(*(query_agent(a) for a in agents), return_exceptions=True)
+        for r in results:
+            if isinstance(r, Exception):
+                logger.warning("Agent failed in %s: %s", topic_out, r)
 
     return execute
 
@@ -108,7 +115,6 @@ def mechanical_stage(
         combined = "\n\n".join(
             f"=== {e.author} ===\n{e.content}" for e in entries
         )
-        import string
         keys_needed = {
             fname for _, fname, _, _ in string.Formatter().parse(prompt_template)
             if fname is not None
@@ -167,7 +173,6 @@ def synthesis_stage(
         question = question_entry.content if question_entry else ""
 
         # Discover which format keys the template expects
-        import string
         keys_needed = {
             fname for _, fname, _, _ in string.Formatter().parse(prompt_template)
             if fname is not None
@@ -187,7 +192,7 @@ def synthesis_stage(
         response = await client.messages.create(
             model=thinking_model,
             max_tokens=thinking_budget + 4096,
-            thinking={"type": "enabled", "budget_tokens": thinking_budget},
+            thinking={"type": "adaptive", "budget_tokens": thinking_budget},
             messages=[{"role": "user", "content": prompt}],
         )
         text = extract_text(response)
@@ -262,7 +267,13 @@ def multi_round_stage(
                 )
                 bb.write(topic_out, response, author=agent["name"], stage=topic_out)
 
-            await asyncio.gather(*(query_agent(a) for a in agents), return_exceptions=True)
+            results = await asyncio.gather(*(query_agent(a) for a in agents), return_exceptions=True)
+            for r in results:
+                if isinstance(r, Exception):
+                    logger.warning("Agent failed in %s round %d: %s", topic_base, round_num, r)
+
+        # Write sentinel so downstream triggers don't depend on max_rounds
+        bb.write(f"{topic_base}_complete", "done", author="system", stage=f"{topic_base}_complete")
 
     return execute
 
@@ -313,7 +324,10 @@ def scoped_parallel_stage(
             )
             bb.write(topic_out, response, author=agent["name"], stage=topic_out)
 
-        await asyncio.gather(*(query_agent(a) for a in agents), return_exceptions=True)
+        results = await asyncio.gather(*(query_agent(a) for a in agents), return_exceptions=True)
+        for r in results:
+            if isinstance(r, Exception):
+                logger.warning("Agent failed in %s: %s", topic_out, r)
 
     return execute
 

@@ -38,7 +38,7 @@ P18_DEF = ProtocolDef(
         ),
         Stage(
             name="synthesize",
-            trigger=after("estimates_round_3"),
+            trigger=after("estimates_complete"),
             execute=synthesis_stage(
                 topics_in=[
                     "estimates_round_0",

@@ -38,7 +38,7 @@ P04_DEF = ProtocolDef(
         ),
         Stage(
             name="synthesize",
-            trigger=after("debate_round_3"),
+            trigger=after("debate_complete"),
             execute=synthesis_stage(
                 topics_in=[
                     "debate_round_0",

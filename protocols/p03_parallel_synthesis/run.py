@@ -60,6 +60,7 @@ def main():
 
     if args.blackboard:
         from protocols.orchestrator_loop import Orchestrator
+        from pathlib import Path
         from protocols.tracing import make_client
         from .protocol_def import P03_DEF
 
@@ -67,7 +68,7 @@ def main():
             print(f"[dry-run] Protocol: {P03_DEF.protocol_id}, stages: {[s.name for s in P03_DEF.stages]}")
             return
 
-        client = make_client(protocol_id="p03_parallel_synthesis", trace=args.trace, trace_path=__import__('pathlib').Path(args.trace_path) if args.trace_path else None)
+        client = make_client(protocol_id="p03_parallel_synthesis", trace=args.trace, trace_path=Path(args.trace_path) if args.trace_path else None)
         config = {
             "client": client,
             "thinking_model": args.thinking_model,

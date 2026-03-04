@@ -78,6 +78,7 @@ def main():
 
     if args.blackboard:
         from protocols.orchestrator_loop import Orchestrator
+        from pathlib import Path
         from protocols.tracing import make_client
         from .protocol_def import P22_DEF
 
@@ -85,7 +86,7 @@ def main():
             print(f"[dry-run] Protocol: {P22_DEF.protocol_id}, stages: {[s.name for s in P22_DEF.stages]}")
             return
 
-        client = make_client(protocol_id="p22_sequential_pipeline", trace=getattr(args, 'trace', False), trace_path=__import__('pathlib').Path(args.trace_path) if getattr(args, 'trace_path', None) else None)
+        client = make_client(protocol_id="p22_sequential_pipeline", trace=getattr(args, 'trace', False), trace_path=Path(args.trace_path) if getattr(args, 'trace_path', None) else None)
         config = {
             "client": client,
             "thinking_model": getattr(args, 'thinking_model', None),
