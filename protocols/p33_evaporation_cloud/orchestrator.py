@@ -84,7 +84,7 @@ class EvaporationCloudOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{
                 "role": "user",
                 "content": MAP_CLOUD_PROMPT.format(question=question),
@@ -116,7 +116,7 @@ class EvaporationCloudOrchestrator:
             response = await self.client.messages.create(
                 model=self.thinking_model,
                 max_tokens=self.thinking_budget + 4096,
-                thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+                thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
                 messages=[{"role": "user", "content": prompt}],
             )
             text = extract_text(response)
@@ -133,7 +133,7 @@ class EvaporationCloudOrchestrator:
             response = await self.client.messages.create(
                 model=self.thinking_model,
                 max_tokens=self.thinking_budget + 4096,
-                thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+                thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
                 messages=[{"role": "user", "content": prompt}],
             )
             text = extract_text(response)
@@ -157,7 +157,7 @@ class EvaporationCloudOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{
                 "role": "user",
                 "content": INJECTION_PROMPT.format(

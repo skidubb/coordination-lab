@@ -128,7 +128,7 @@ class SixHatsOrchestrator:
                 response = await self.client.messages.create(
                     model=self.thinking_model,
                     max_tokens=self.thinking_budget + 4096,
-                    thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+                    thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
                     messages=messages,
                 )
             else:
@@ -160,7 +160,7 @@ class SixHatsOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{
                 "role": "user",
                 "content": BLUE_HAT_SYNTHESIS_PROMPT.format(

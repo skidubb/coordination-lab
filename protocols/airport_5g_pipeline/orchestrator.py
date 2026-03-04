@@ -292,7 +292,7 @@ class Airport5GPipelineOrchestrator:
         resp = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{"role": "user", "content": synthesis_prompt}],
         )
         synthesis_text = extract_text(resp)
@@ -322,7 +322,7 @@ class Airport5GPipelineOrchestrator:
         resp = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             system=agent.get("system_prompt", ""),
             messages=[{"role": "user", "content": prompt}],
         )
@@ -399,7 +399,7 @@ class Airport5GPipelineOrchestrator:
         resp = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             system="You are a strategic synthesizer producing actionable conclusions from multi-stakeholder constraint negotiations.",
             messages=[{"role": "user", "content": synthesis_prompt}],
         )
@@ -427,7 +427,7 @@ class Airport5GPipelineOrchestrator:
         resp = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             system=agent.get("system_prompt", ""),
             messages=[{"role": "user", "content": prompt}],
         )
@@ -447,7 +447,7 @@ class Airport5GPipelineOrchestrator:
         resp = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             system=agent.get("system_prompt", ""),
             messages=[{"role": "user", "content": prompt}],
         )
@@ -558,7 +558,7 @@ class Airport5GPipelineOrchestrator:
         resp = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{"role": "user", "content": prompt}],
         )
         return extract_text(resp)
@@ -576,7 +576,7 @@ class Airport5GPipelineOrchestrator:
         resp = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{"role": "user", "content": prompt}],
         )
         return extract_text(resp)
@@ -594,7 +594,7 @@ class Airport5GPipelineOrchestrator:
         resp = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 8192,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             system=agent.get("system_prompt", ""),
             messages=[{"role": "user", "content": prompt}],
         )
@@ -609,7 +609,7 @@ class Airport5GPipelineOrchestrator:
         resp = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             system=agent.get("system_prompt", ""),
             messages=[{"role": "user", "content": prompt}],
         )
@@ -620,7 +620,7 @@ class Airport5GPipelineOrchestrator:
         resp = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 8192,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{"role": "user", "content": prompt}],
         )
         return extract_text(resp)

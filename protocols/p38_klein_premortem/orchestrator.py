@@ -95,7 +95,7 @@ class PreMortemOrchestrator:
             response = await self.client.messages.create(
                 model=self.thinking_model,
                 max_tokens=self.thinking_budget + 4096,
-                thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+                thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
                 system=agent["system_prompt"],
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -131,7 +131,7 @@ class PreMortemOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{
                 "role": "user",
                 "content": MITIGATION_SYNTHESIS_PROMPT.format(

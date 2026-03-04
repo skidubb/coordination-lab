@@ -98,7 +98,7 @@ class SublationOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             system="You are a dialectical philosopher tasked with presenting the Thesis position with full conviction.",
             messages=[{
                 "role": "user",
@@ -116,7 +116,7 @@ class SublationOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             system="You are a dialectical philosopher tasked with presenting the Antithesis position with full conviction.",
             messages=[{
                 "role": "user",
@@ -134,7 +134,7 @@ class SublationOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             system="You are a master dialectician performing Hegelian sublation. You must preserve, negate, and transcend both positions.",
             messages=[{
                 "role": "user",

@@ -114,7 +114,7 @@ class OODAOrchestrator:
             response = await self.client.messages.create(
                 model=self.thinking_model,
                 max_tokens=compact_budget + 2048,
-                thinking={"type": "adaptive", "budget_tokens": compact_budget},
+                thinking={"type": "enabled", "budget_tokens": compact_budget},
                 system=agent["system_prompt"],
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -133,7 +133,7 @@ class OODAOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{"role": "user", "content": prompt}],
         )
         return extract_text(response)
@@ -145,7 +145,7 @@ class OODAOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=compact_budget + 2048,
-            thinking={"type": "adaptive", "budget_tokens": compact_budget},
+            thinking={"type": "enabled", "budget_tokens": compact_budget},
             messages=[{"role": "user", "content": prompt}],
         )
         return extract_text(response)
@@ -157,7 +157,7 @@ class OODAOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=compact_budget + 2048,
-            thinking={"type": "adaptive", "budget_tokens": compact_budget},
+            thinking={"type": "enabled", "budget_tokens": compact_budget},
             messages=[{"role": "user", "content": prompt}],
         )
         return extract_text(response)
@@ -173,7 +173,7 @@ class OODAOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{"role": "user", "content": prompt}],
         )
         return extract_text(response)

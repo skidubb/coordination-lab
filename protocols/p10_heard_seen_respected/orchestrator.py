@@ -73,7 +73,7 @@ class HSROrchestrator:
             model=self.thinking_model,
             max_tokens=16_000,
             thinking={
-                "type": "adaptive",
+                "type": "enabled",
                 "budget_tokens": self.thinking_budget,
             },
             system=agent.system_prompt,
@@ -112,7 +112,7 @@ class HSROrchestrator:
             model=self.thinking_model,
             max_tokens=16_000,
             thinking={
-                "type": "adaptive",
+                "type": "enabled",
                 "budget_tokens": self.thinking_budget,
             },
             messages=[

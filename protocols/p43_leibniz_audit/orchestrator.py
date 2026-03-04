@@ -74,7 +74,7 @@ class AuditChainOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{
                 "role": "user",
                 "content": DECOMPOSE_PROMPT.format(
@@ -91,7 +91,7 @@ class AuditChainOrchestrator:
         response = await self.client.messages.create(
             model=self.thinking_model,
             max_tokens=self.thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": self.thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": self.thinking_budget},
             messages=[{
                 "role": "user",
                 "content": AUDIT_PROMPT.format(steps_json=steps_json),
