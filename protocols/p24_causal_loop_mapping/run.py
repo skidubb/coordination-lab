@@ -125,9 +125,50 @@ def main() -> None:
         help="Output raw JSON instead of formatted text.",
     )
 
-    parser.add_argument("--mode", choices=["research", "production"], default="research", help="Agent mode: research (lightweight) or production (real SDK agents)")
+    parser.add_argument(
+        "--agent-model",
+        default=None,
+        help="Override the LLM model for all agents (e.g., 'gemini/gemini-3.1-pro-preview'). "
+             "When set, agent calls route through LiteLLM instead of Anthropic SDK.",
+    )
+    parser.add_argument("--mode", choices=["research", "production"], default="production", help="Agent mode: research (lightweight) or production (real SDK agents)")
+    parser.add_argument("--blackboard", action="store_true", help="Use blackboard-driven orchestrator")
+    parser.add_argument("--dry-run", action="store_true", help="Print config and exit (no LLM calls)")
     args = parser.parse_args()
     agents = build_agents(args.agents, mode=args.mode)
+
+    if args.agent_model:
+        for agent in agents:
+            agent["model"] = args.agent_model
+
+
+    if args.blackboard:
+        from protocols.orchestrator_loop import Orchestrator
+        from protocols.tracing import make_client
+        from .protocol_def import P24_DEF
+
+        if args.dry_run:
+            print(f"[dry-run] Protocol: {P24_DEF.protocol_id}, stages: {[s.name for s in P24_DEF.stages]}")
+            return
+
+        client = make_client(protocol_id="p24_causal_loop_mapping", trace=getattr(args, 'trace', False), trace_path=__import__('pathlib').Path(args.trace_path) if getattr(args, 'trace_path', None) else None)
+        config = {
+            "client": client,
+            "thinking_model": getattr(args, 'thinking_model', None),
+            "orchestration_model": getattr(args, 'orchestration_model', getattr(args, 'thinking_model', None)),
+            "thinking_budget": getattr(args, 'thinking_budget', 10000),
+        }
+        orch = Orchestrator()
+        bb = asyncio.run(orch.run(P24_DEF, args.question, agents, **config))
+
+        print("\n" + "=" * 70)
+        print("CAUSAL LOOP MAPPING RESULTS (blackboard)")
+        print("=" * 70)
+        synthesis = bb.read_latest("synthesis")
+        if synthesis:
+            print(f"\n{synthesis.content}")
+        print(f"\nResources: {bb.resource_signals()}")
+        return
 
     orchestrator = CausalLoopOrchestrator(
         agents=agents,

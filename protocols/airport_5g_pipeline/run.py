@@ -201,9 +201,40 @@ def main() -> None:
         help="Save results to this directory (creates stage files + board report).",
     )
 
-    parser.add_argument("--mode", choices=["research", "production"], default="research", help="Agent mode: research (lightweight) or production (real SDK agents)")
+    parser.add_argument("--mode", choices=["research", "production"], default="production", help="Agent mode: research (lightweight) or production (real SDK agents)")
+    parser.add_argument("--blackboard", action="store_true", help="Use blackboard-driven orchestrator")
+    parser.add_argument("--dry-run", action="store_true", help="Print config and exit (no LLM calls)")
     args = parser.parse_args()
     agents = load_agents(args.agent_config)
+
+
+    if args.blackboard:
+        from protocols.orchestrator_loop import Orchestrator
+        from protocols.tracing import make_client
+        from .protocol_def import AIRPORT_5G_DEF
+
+        if args.dry_run:
+            print(f"[dry-run] Protocol: {AIRPORT_5G_DEF.protocol_id}, stages: {[s.name for s in AIRPORT_5G_DEF.stages]}")
+            return
+
+        client = make_client(protocol_id="airport_5g_pipeline", trace=getattr(args, 'trace', False), trace_path=__import__('pathlib').Path(args.trace_path) if getattr(args, 'trace_path', None) else None)
+        config = {
+            "client": client,
+            "thinking_model": getattr(args, 'thinking_model', 'claude-opus-4-6'),
+            "orchestration_model": getattr(args, 'orchestration_model', 'claude-haiku-4-5-20251001'),
+            "thinking_budget": getattr(args, 'thinking_budget', 10000),
+        }
+        orch = Orchestrator()
+        bb = asyncio.run(orch.run(AIRPORT_5G_DEF, args.question, agents, **config))
+
+        print("\n" + "=" * 70)
+        print("AIRPORT 5G PIPELINE RESULTS (blackboard)")
+        print("=" * 70)
+        synthesis = bb.read_latest("synthesis")
+        if synthesis:
+            print(f"\n{synthesis.content}")
+        print(f"\nResources: {bb.resource_signals()}")
+        return
 
     orchestrator = Airport5GPipelineOrchestrator(
         agents=agents,

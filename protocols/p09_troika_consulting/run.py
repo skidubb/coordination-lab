@@ -74,11 +74,42 @@ def main():
     )
     parser.add_argument("--json", action="store_true", dest="json_output", help="Output raw JSON")
     parser.add_argument("--thinking-budget", type=int, default=10_000, help="Extended thinking budget")
-    parser.add_argument("--mode", choices=["research", "production"], default="research", help="Agent mode: research (lightweight) or production (real SDK agents)")
+    parser.add_argument("--mode", choices=["research", "production"], default="production", help="Agent mode: research (lightweight) or production (real SDK agents)")
+    parser.add_argument("--blackboard", action="store_true", help="Use blackboard-driven orchestrator")
+    parser.add_argument("--dry-run", action="store_true", help="Print config and exit (no LLM calls)")
     args = parser.parse_args()
 
     agent_dicts = build_agents(args.agents, mode=args.mode)
     agents = [AgentSpec(name=a["name"], system_prompt=a["system_prompt"]) for a in agent_dicts]
+
+    if args.blackboard:
+        from protocols.orchestrator_loop import Orchestrator
+        from protocols.tracing import make_client
+        from .protocol_def import P09_DEF
+
+        if args.dry_run:
+            print(f"[dry-run] Protocol: {P09_DEF.protocol_id}, stages: {[s.name for s in P09_DEF.stages]}")
+            return
+
+        client = make_client(protocol_id="p09_troika_consulting", trace=getattr(args, 'trace', False), trace_path=__import__('pathlib').Path(args.trace_path) if getattr(args, 'trace_path', None) else None)
+        config = {
+            "client": client,
+            "thinking_model": getattr(args, 'thinking_model', None),
+            "orchestration_model": getattr(args, 'orchestration_model', getattr(args, 'thinking_model', None)),
+            "thinking_budget": getattr(args, 'thinking_budget', 10000),
+        }
+        orch = Orchestrator()
+        bb = asyncio.run(orch.run(P09_DEF, args.question, agents, **config))
+
+        print("\n" + "=" * 70)
+        print("TROIKA CONSULTING RESULTS (blackboard)")
+        print("=" * 70)
+        synthesis = bb.read_latest("synthesis")
+        if synthesis:
+            print(f"\n{synthesis.content}")
+        print(f"\nResources: {bb.resource_signals()}")
+        return
+
     orchestrator = TroikaOrchestrator(agents=agents, thinking_budget=args.thinking_budget)
     result = asyncio.run(orchestrator.run(args.question))
 

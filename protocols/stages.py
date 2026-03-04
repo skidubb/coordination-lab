@@ -10,7 +10,7 @@ import asyncio
 from typing import Any, Callable
 
 
-from protocols.blackboard import Blackboard
+from protocols.blackboard import Blackboard, BlackboardEntry
 from protocols.config import THINKING_MODEL, ORCHESTRATION_MODEL
 from protocols.llm import agent_complete, extract_text
 
@@ -187,7 +187,7 @@ def synthesis_stage(
         response = await client.messages.create(
             model=thinking_model,
             max_tokens=thinking_budget + 4096,
-            thinking={"type": "adaptive", "budget_tokens": thinking_budget},
+            thinking={"type": "enabled", "budget_tokens": thinking_budget},
             messages=[{"role": "user", "content": prompt}],
         )
         text = extract_text(response)
@@ -204,5 +204,132 @@ def synthesis_stage(
                 }
             },
         )
+
+    return execute
+
+
+def multi_round_stage(
+    topic_base: str,
+    prompt_template: str,
+    max_rounds: int = 3,
+    convergence_fn: Callable[[Blackboard, int], bool] | None = None,
+) -> Callable:
+    """N rounds of parallel agent queries; each round reads prior round context."""
+
+    async def execute(bb: Blackboard, agents: list[dict], **config) -> None:
+        client = config.get("client")
+        thinking_model = config.get("thinking_model", THINKING_MODEL)
+        thinking_budget = config.get("thinking_budget", 10_000)
+
+        question_entry = bb.read_latest("question")
+        question = question_entry.content if question_entry else ""
+
+        for round_num in range(1, max_rounds + 1):
+            # Check convergence before starting new round (skip round 1)
+            if round_num > 1 and convergence_fn and convergence_fn(bb, round_num):
+                break
+
+            # Gather prior round context
+            prior_entries = bb.read(f"{topic_base}_round_{round_num - 1}") if round_num > 1 else []
+            prior_text = "\n\n".join(
+                f"[{e.author}]: {e.content}" for e in prior_entries
+            )
+            topic_out = f"{topic_base}_round_{round_num}"
+
+            async def query_agent(agent: dict, prior: str = prior_text) -> None:
+                import string
+                keys_needed = {
+                    fname for _, fname, _, _ in string.Formatter().parse(prompt_template)
+                    if fname is not None
+                }
+                fmt: dict[str, Any] = {
+                    "question": question, "input": question,
+                    "prior_arguments": prior, "prior_responses": prior,
+                    "round_number": round_num,
+                }
+                for key in keys_needed:
+                    if key not in fmt:
+                        fmt[key] = prior or question
+                prompt = prompt_template.format(**fmt)
+
+                response = await agent_complete(
+                    agent=agent,
+                    fallback_model=thinking_model,
+                    messages=[{"role": "user", "content": prompt}],
+                    thinking_budget=thinking_budget,
+                    anthropic_client=client,
+                    no_tools=config.get("no_tools", False),
+                )
+                bb.write(topic_out, response, author=agent["name"], stage=topic_out)
+
+            await asyncio.gather(*(query_agent(a) for a in agents), return_exceptions=True)
+
+    return execute
+
+
+def scoped_parallel_stage(
+    topic_in: str,
+    topic_out: str,
+    prompt_template: str,
+    scope_fn: Callable[[dict, list[BlackboardEntry]], list[BlackboardEntry]] | None = None,
+) -> Callable:
+    """Parallel stage where each agent gets filtered input via scope_fn(agent, entries)."""
+
+    async def execute(bb: Blackboard, agents: list[dict], **config) -> None:
+        client = config.get("client")
+        thinking_model = config.get("thinking_model", THINKING_MODEL)
+        thinking_budget = config.get("thinking_budget", 10_000)
+
+        entries = bb.read(topic_in)
+        question_entry = bb.read_latest("question")
+        question = question_entry.content if question_entry else ""
+
+        async def query_agent(agent: dict) -> None:
+            scoped_entries = scope_fn(agent, entries) if scope_fn else entries
+            scoped_text = "\n\n".join(
+                f"[{e.author}]: {e.content}" for e in scoped_entries
+            )
+            import string
+            keys_needed = {
+                fname for _, fname, _, _ in string.Formatter().parse(prompt_template)
+                if fname is not None
+            }
+            fmt: dict[str, Any] = {
+                "question": question, "input": scoped_text,
+                "scoped_input": scoped_text,
+            }
+            for key in keys_needed:
+                if key not in fmt:
+                    fmt[key] = scoped_text or question
+            prompt = prompt_template.format(**fmt)
+
+            response = await agent_complete(
+                agent=agent,
+                fallback_model=thinking_model,
+                messages=[{"role": "user", "content": prompt}],
+                thinking_budget=thinking_budget,
+                anthropic_client=client,
+                no_tools=config.get("no_tools", False),
+            )
+            bb.write(topic_out, response, author=agent["name"], stage=topic_out)
+
+        await asyncio.gather(*(query_agent(a) for a in agents), return_exceptions=True)
+
+    return execute
+
+
+def compute_stage(
+    topic_in: str,
+    topic_out: str,
+    compute_fn: Callable[[list[BlackboardEntry]], Any],
+) -> Callable:
+    """Pure Python computation stage — no LLM call. compute_fn receives entries, returns content."""
+
+    async def execute(bb: Blackboard, agents: list[dict], **config) -> None:
+        entries = bb.read(topic_in)
+        if not entries:
+            return
+        result = compute_fn(entries)
+        bb.write(topic_out, result, author="system", stage=topic_out)
 
     return execute

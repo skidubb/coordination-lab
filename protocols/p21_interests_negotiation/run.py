@@ -109,10 +109,51 @@ def main():
     )
     parser.add_argument("--max-rounds", type=int, default=2, help="Max option-generation rounds (default: 2)")
     parser.add_argument("--json", action="store_true", dest="json_output", help="Output raw JSON result")
-    parser.add_argument("--mode", choices=["research", "production"], default="research", help="Agent mode: research (lightweight) or production (real SDK agents)")
+    parser.add_argument("--mode", choices=["research", "production"], default="production", help="Agent mode: research (lightweight) or production (real SDK agents)")
+    parser.add_argument(
+        "--agent-model",
+        default=None,
+        help="Override the LLM model for all agents (e.g., 'gemini/gemini-3.1-pro-preview'). "
+             "When set, agent calls route through LiteLLM instead of Anthropic SDK.",
+    )
+    parser.add_argument("--blackboard", action="store_true", help="Use blackboard-driven orchestrator")
+    parser.add_argument("--dry-run", action="store_true", help="Print config and exit (no LLM calls)")
+    parser.add_argument("--thinking-budget", type=int, default=10000, help="Token budget for extended thinking")
     args = parser.parse_args()
 
     agents = build_agents(args.agents, mode=args.mode)
+    if args.agent_model:
+        for agent in agents:
+            agent["model"] = args.agent_model
+
+    if args.blackboard:
+        from protocols.orchestrator_loop import Orchestrator
+        from protocols.tracing import make_client
+        from .protocol_def import P21_DEF
+
+        if args.dry_run:
+            print(f"[dry-run] Protocol: {P21_DEF.protocol_id}, stages: {[s.name for s in P21_DEF.stages]}")
+            return
+
+        client = make_client(protocol_id="p21_interests_negotiation", trace=getattr(args, 'trace', False), trace_path=__import__('pathlib').Path(args.trace_path) if getattr(args, 'trace_path', None) else None)
+        config = {
+            "client": client,
+            "thinking_model": getattr(args, 'thinking_model', None),
+            "orchestration_model": getattr(args, 'orchestration_model', getattr(args, 'thinking_model', None)),
+            "thinking_budget": getattr(args, 'thinking_budget', 10000),
+        }
+        orch = Orchestrator()
+        bb = asyncio.run(orch.run(P21_DEF, args.question, agents, **config))
+
+        print("\n" + "=" * 70)
+        print("INTERESTS-BASED NEGOTIATION RESULTS (blackboard)")
+        print("=" * 70)
+        synthesis = bb.read_latest("synthesis")
+        if synthesis:
+            print(f"\n{synthesis.content}")
+        print(f"\nResources: {bb.resource_signals()}")
+        return
+
     orchestrator = InterestsNegotiationOrchestrator(
         agents=agents,
         max_rounds=args.max_rounds,

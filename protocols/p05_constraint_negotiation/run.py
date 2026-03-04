@@ -58,7 +58,9 @@ def main():
     parser.add_argument("--thinking-budget", type=int, default=10000, help="Token budget for extended thinking (default: 10000)")
     parser.add_argument("--trace", action="store_true", help="Enable JSONL execution tracing")
     parser.add_argument("--trace-path", default=None, help="Explicit trace file path")
-    parser.add_argument("--mode", choices=["research", "production"], default="research", help="Agent mode: research (lightweight) or production (real SDK agents)")
+    parser.add_argument("--mode", choices=["research", "production"], default="production", help="Agent mode: research (lightweight) or production (real SDK agents)")
+    parser.add_argument("--blackboard", action="store_true", help="Use blackboard-driven orchestrator")
+    parser.add_argument("--dry-run", action="store_true", help="Print config and exit (no LLM calls)")
     args = parser.parse_args()
 
     agents = build_agents(args.agents, args.agent_config, mode=args.mode)
@@ -73,6 +75,35 @@ def main():
     )
 
     print(f"Running {args.rounds}-round negotiation with {len(agents)} agents: {', '.join(a['name'] for a in agents)}")
+
+    if args.blackboard:
+        from protocols.orchestrator_loop import Orchestrator
+        from protocols.tracing import make_client
+        from .protocol_def import P05_DEF
+
+        if args.dry_run:
+            print(f"[dry-run] Protocol: {P05_DEF.protocol_id}, stages: {[s.name for s in P05_DEF.stages]}")
+            return
+
+        client = make_client(protocol_id="p05_constraint_negotiation", trace=getattr(args, 'trace', False), trace_path=__import__('pathlib').Path(args.trace_path) if getattr(args, 'trace_path', None) else None)
+        config = {
+            "client": client,
+            "thinking_model": getattr(args, 'thinking_model', None),
+            "orchestration_model": getattr(args, 'orchestration_model', getattr(args, 'thinking_model', None)),
+            "thinking_budget": getattr(args, 'thinking_budget', 10000),
+        }
+        orch = Orchestrator()
+        bb = asyncio.run(orch.run(P05_DEF, args.question, agents, **config))
+
+        print("\n" + "=" * 70)
+        print("CONSTRAINT NEGOTIATION RESULTS (blackboard)")
+        print("=" * 70)
+        synthesis = bb.read_latest("synthesis")
+        if synthesis:
+            print(f"\n{synthesis.content}")
+        print(f"\nResources: {bb.resource_signals()}")
+        return
+
     result = asyncio.run(orchestrator.run(args.question))
     print_result(result)
 
