@@ -50,6 +50,17 @@ export interface ToolRegistry {
   mcp_servers: Record<string, McpServer>
 }
 
+export interface Integration {
+  id: number
+  name: string
+  type: 'tool_domain' | 'mcp_server'
+  enabled: boolean
+  config: Record<string, string>
+  api_key_configured: boolean
+  description: string
+  is_builtin: boolean
+}
+
 export interface Protocol {
   key: string
   protocol_id: string
@@ -107,6 +118,32 @@ export interface ToolCallEvent {
   iteration?: number
 }
 
+export interface KBNamespace {
+  name: string
+  vector_count: number | null
+  assigned_roles: string[]
+}
+
+export interface KBSearchResult {
+  id: string
+  score: number
+  text_preview: string
+  metadata: Record<string, string>
+}
+
+export interface StageNode {
+  name: string
+  stage_type: 'agent' | 'mechanical' | 'synthesis'
+  depends_on: string[]
+  agents_filter: string | null
+}
+
+export interface ProtocolStages {
+  protocol_id: string
+  protocol_name: string
+  stages: StageNode[]
+}
+
 export interface Run {
   id: number
   type: 'protocol' | 'pipeline'
@@ -116,6 +153,8 @@ export interface Run {
   team_id: number | null
   status: 'pending' | 'running' | 'completed' | 'failed'
   cost_usd: number
+  error_message?: string | null
+  telemetry_warnings?: Array<Record<string, unknown>>
   started_at: string
   completed_at: string | null
 }

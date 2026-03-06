@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, SQLModel
 
 
 def _now() -> datetime:
@@ -32,6 +32,20 @@ class Agent(SQLModel, table=True):
     communication_style: str = ""
     constraints_json: str = "[]"
     is_builtin: bool = False
+    created_at: datetime = Field(default_factory=_now)
+
+
+# ── Integrations ─────────────────────────────────────────────────────────────
+
+class Integration(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True, unique=True)
+    type: str = ""            # "tool_domain" | "mcp_server"
+    enabled: bool = False
+    config_json: str = "{}"
+    api_key_configured: bool = False
+    description: str = ""
+    is_builtin: bool = True
     created_at: datetime = Field(default_factory=_now)
 
 
@@ -81,6 +95,7 @@ class Run(SQLModel, table=True):
     team_id: Optional[int] = None
     status: str = "pending"
     cost_usd: float = 0.0
+    error_message: Optional[str] = None
     started_at: datetime = Field(default_factory=_now)
     completed_at: Optional[datetime] = None
 

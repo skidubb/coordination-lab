@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useProtocolStore } from '../stores/protocolStore'
+import ProtocolDiagram from '../components/ProtocolDiagram'
 import type { Protocol } from '../types'
 
 const COST_COLORS: Record<string, string> = {
@@ -99,6 +100,8 @@ export default function ProtocolLibrary() {
 }
 
 function ProtocolDetail({ protocol }: { protocol: Protocol }) {
+  const [showDiagram, setShowDiagram] = useState(false)
+
   return (
     <div className="bg-card border border-border rounded-xl p-6 max-w-2xl">
       <div className="flex items-start justify-between mb-4">
@@ -168,6 +171,16 @@ function ProtocolDetail({ protocol }: { protocol: Protocol }) {
           <p className="text-sm text-text leading-relaxed">{protocol.when_not_to_use}</p>
         </div>
       )}
+
+      <div className="mt-4 pt-4 border-t border-border">
+        <button
+          onClick={() => setShowDiagram(!showDiagram)}
+          className="px-4 py-2 rounded-lg text-sm font-medium bg-elevated border border-border text-text hover:bg-white transition"
+        >
+          {showDiagram ? 'Hide Stage Diagram' : 'Show Stage Diagram'}
+        </button>
+        {showDiagram && <ProtocolDiagram protocolKey={protocol.key} />}
+      </div>
     </div>
   )
 }
